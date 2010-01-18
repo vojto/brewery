@@ -1,0 +1,21 @@
+Input Nodes:
+* File Input
+* Database Table Input (not implemented)
+* SQL Input (not implemented)
+
+Output Nodes:
+* File Output Node
+* Database Table Output (not implemented)
+
+Record Nodes:
+* Aggregation
+* Sort (not implemented)
+* Merge (join) (not implemented)
+* Append (not implemented)
+
+Field Nodes:
+* Filter Fields (not implemented)
+* Derive Fields (not implemented)
+* Binning (not implemented)
+* Field Reorder (not implemented)
+* History (not implemented)

@@ -1,0 +1,16 @@
+Brewery - Data Manipulation and Data Mining Framework
+
+ABOUT
+
+Brewery is a ruby framework for:
+* creating ETL processes
+* data migrations
+* automated data processing
+* data mining
+
+AUTHOR
+
+Stefan Urbanek <stefan@knowerce.sk>
+Knowerce, s.r.o.
+http://www.knowerce.sk
+
