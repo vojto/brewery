@@ -9,7 +9,8 @@ def values=(array)
 end
 
 def fields=(array)
-    @fields = Array.new
+    @fields = array
+    @field_names = Array.new
 
     array.each { |field|
         if field.kind_of?(Field)
@@ -17,7 +18,7 @@ def fields=(array)
         else
             name = field
         end
-        @fields << name.to_sym
+        @field_names << name.to_sym
     }
 
     # return if not array
@@ -25,7 +26,7 @@ end
 
 def [](ref)
     # FIXME: add some checks
-    index = @fields.index(ref.to_sym)
+    index = @field_names.index(ref.to_sym)
 
     if index
         return @values[index]

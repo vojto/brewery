@@ -35,6 +35,15 @@ def read_field_names
     @reader.close
 end
 
+def set_storage_type_for_field(field_name, storage_type)
+    field = fields.detect { |f| f.name.to_s == field_name.to_s }
+    if field
+        field.storage_type = storage_type
+    else
+        raise "Unknown field #{field_name}"
+    end
+end
+
 def skip_header_lines
     if @skiped_header_lines_count and @skiped_header_lines_count > 0
         for i in (1..@skiped_header_lines_count)
