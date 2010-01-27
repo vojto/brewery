@@ -1,11 +1,19 @@
-require 'node'
+require 'terminal_node'
 require 'csv'
 
-class TableOutputNode < Node
+class TableOutputNode < TerminalNode
 attr_accessor :table_name
 attr_accessor :mode # :append, :overwrite
 attr_accessor :create_table
 attr_accessor :connection
+
+def initialize(hash = {})
+    super(hash)
+    @table_name = hash["table_name"]
+    @mode = hash["mode"]
+    @mode = @mode.to_sym if @mode
+    @create_table = hash["create_table"]
+end
 
 def check_field_storage_types
     field = fields.detect { |field|
@@ -16,10 +24,6 @@ def check_field_storage_types
     else
         return true
     end
-end
-
-def prepare
-    @fields = input_node.fields
 end
 
 def create_or_replace_table
@@ -35,11 +39,9 @@ def create_or_replace_table
 	end
 end
 
-def evaluate
-    # require: table
-    # require: fields
-    # optional: mode
-    
+def execute(inputs, output)
+    input_dataset = inputs[0]
+
     if create_table
         if !check_field_storage_types
             raise "field storage types are unknown or invalid"
@@ -50,7 +52,11 @@ def evaluate
 
     table = @connection[table_name.to_sym]
 
-    input_node.each do |record|
+    dataset_table = input_dataset.table
+
+    puts "==> RECORDS FROM #{dataset_table}"
+    dataset_table.each do |record|
+        puts "--> #{record}"
         values = record.values
         table.insert(values)
     end
