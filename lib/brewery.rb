@@ -1,4 +1,6 @@
 require 'node'
+require 'datastore'
+require 'stream'
 
 # Nodes
 

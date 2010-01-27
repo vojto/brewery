@@ -1,0 +1,14 @@
+nodes:
+    file_in:
+        type: file_source
+        filename: test.csv
+        reads_field_names: true
+    table_out: 
+        type: table_output
+        table_name: output_table
+        mode: replace
+        create_table: true
+connections:
+    -
+        source: file_in
+        target: table_out
