@@ -4,10 +4,12 @@ require 'yaml'
 class Stream
 attr_reader :nodes
 attr_reader :named_nodes
+attr_accessor :datastore
 
 def initialize
     @nodes = Array.new
     @named_nodes = Hash.new
+    @datasets = Array.new
 end
 
 ########################################################################
@@ -102,24 +104,96 @@ end
 
 ########################################################################
 # Execution
+def execute_node_named(node_name)
+    node = node_with_name(node_name)
+    execute_node(node)
+end
 
 def execute_node(node)
     if not node.kind_of?(TerminalNode)
-        raise "Could not execute node #{node.lable}. Only terminal nodes can be executed"
+        raise "Could not execute node of type #{node.class.name}. Only terminal nodes can be executed"
+    end
+
+    if not @datastore
+        raise RuntimeError, "No datastore set for stream"
     end
     
     # Assume that there is no cycle
+    # FIXME: check for cycles
+
+    # FIXME: use execution context
 
     # Prepare model
-    prepare_dataset_for_node(node)
+    prepare_node(node)
+    prepare_datasets
+
+    # Execute nodes
+    execute_node_real(node)
     
-    # Prepare working tables for branch
-    
-    raise NotImplementedError, "Not implemented"
+    # raise NotImplementedError, "Not implemented"
     
 end
 
-def prepare_dataset_for_node(node)
+def prepare_node(node)
+    if node.output_dataset
+        # Already visited and prepared
+        return
+    end
+
+    # Traverse input nodes
+    input_nodes = node.input_nodes
+    if input_nodes
+        input_nodes.each { |input_node|
+            prepare_node(input_node)
+        }
+    end
+    
+    if node.creates_dataset
+        dataset = Dataset.new
+        @datasets << dataset
+    else # does not create dataset, should be single dataset node
+        if node.input_nodes.count > 1
+            raise RuntimeError, "If node does not create dataset it should have only one input node"
+        end
+        
+        dataset = node.input_node.output_dataset
+    end
+    
+    node.output_dataset = dataset
+    # puts "==> IN #{node}"
+    fields = node.created_fields
+    if fields
+        dataset.add_fields(fields)
+    end
+    
+    node.prepare
+end
+
+def prepare_datasets
+    @datasets.each { |dataset|
+        @datastore.prepare_dataset(dataset)
+    }
+end
+
+def execute_node_real(node)
+    puts "==> try real #{node}"
+
+    input_nodes = node.input_nodes
+    if input_nodes
+        input_nodes.each { |input_node|
+            puts "==> input #{input_node}"
+
+            execute_node_real(input_node)
+        }
+    end
+
+    if node.finished
+        return
+    else
+        puts "==> Executing #{node}"
+        node.execute
+        node.finished = true
+    end
 end
 
 ########################################################################

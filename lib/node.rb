@@ -8,9 +8,14 @@ attr_accessor :fields
 attr_writer   :label
 attr_reader   :generated_fields
 attr_reader   :creates_dataset
+attr_accessor :finished
 
+# Stream
 attr_reader   :input_nodes
 attr_reader   :output_node
+
+# Execution variables
+attr_accessor :output_dataset
 
 @@node_label_number = 0
 
@@ -84,6 +89,14 @@ def label
     return @label
 end
 
+def input_nodes_changed
+    # Do nothing, make it node specific
+end
+
+def prepare
+    # Do nothing, make it node specific
+end
+
 def add_input_node(node)
     return if @input_nodes.include?(node)
 
@@ -92,15 +105,23 @@ def add_input_node(node)
     end
     
     @input_nodes << node
+    input_nodes_changed
 end
 
 def remove_input_node(node)
     @input_nodes.delete(node)
+    input_nodes_changed
+end
+
+def input_node
+    @input_nodes[0]
 end
 
 def set_output_node(node)
     # Check node type
     @output_node = node
 end
-
+def created_fields
+    return nil
+end
 end

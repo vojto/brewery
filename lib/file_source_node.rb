@@ -35,6 +35,8 @@ def read_field_names
     header.each { |field_name|
         field = Field.new
         field.name = field_name
+        field.storage_type = :string
+        field.data_type = :default
         @fields << field
     }
 
@@ -68,7 +70,7 @@ def skip_header_lines
     end
 end
 
-def execute(inputs, output)
+def execute
     @reader = CSV.open(filename, 'r')
     skip_header_lines
     
@@ -78,23 +80,23 @@ def execute(inputs, output)
         @reader.shift
     end
 
-    table = output.table
+    table = output_dataset.table
+    map = output_dataset.map
 
-    @reader.each { |row|
-        table.insert(hash_from_row(row))
+    @reader.each { |line|
+        record = Hash.new
+    
+        # FIXME: map fields and correct storage types
+        # FIXME: Add null values
+        for i in (0..@fields.count-1)
+            column = map[@fields[i].name]
+            record[column] = line[i]
+        end
+        table.insert(record)
     }
 end
 
 def hash_from_row(row)
-    hash = Hash.new
-
-    # FIXME: map fields and correct storage types
-    # FIXME: Add null values
-    for i in (0..@fields.count-1)
-        field = @fields[i].name
-        puts "--> #{i} #{field}=#{row[i]}"
-        hash[field] = row[i]
-    end
 
     return hash
 end

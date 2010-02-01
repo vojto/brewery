@@ -6,7 +6,7 @@ attr_accessor :filename
 attr_accessor :mode # :append, :overwrite
 attr_accessor :include_field_names
 
-def execute(input_datasets, output_datasets)
+def execute
     # requre: filename
     # optional: mode
     
