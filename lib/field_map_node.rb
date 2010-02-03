@@ -1,6 +1,6 @@
 require 'processing_node'
 
-class FieldMapNode < ProcessingNode
+class FieldMapNode < FieldOperationNode
 
 def initialize(hash = {})
     super(hash)

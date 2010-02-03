@@ -159,14 +159,14 @@ def prepare_node(node)
         dataset = node.input_node.output_dataset
     end
     
+    node.prepare
+
     node.output_dataset = dataset
     # puts "==> IN #{node}"
     fields = node.created_fields
     if fields
         dataset.add_fields(fields)
     end
-    
-    node.prepare
 end
 
 def prepare_datasets

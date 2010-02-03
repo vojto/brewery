@@ -1,26 +1,23 @@
 require 'field'
 require 'dataset'
 require 'class_additions'
+require 'pipe'
 
 class Node
 
-attr_accessor :fields
 attr_writer   :label
 attr_reader   :generated_fields
 attr_reader   :creates_dataset
 attr_accessor :finished
 
 # Stream
-attr_reader   :input_nodes
-attr_reader   :output_node
-
-# Execution variables
-attr_accessor :output_dataset
+attr_reader   :input_pipes
+attr_reader   :output_pipe
 
 @@node_label_number = 0
 
 def initialize(hash = {})
-    @input_nodes = Array.new
+    @input_pipes = Array.new
 end
 
 def self.node_class_from_type(type)
@@ -59,21 +56,49 @@ def execute(input_datasets, output_dataset)
 end
 
 def fields
-    if !@fields
-        return Array.new
-    else
-        return @fields
+    created_fields = self.created_fields
+    map = self.field_map
+
+    if map
+        stream_fields = map.transpose[1]
     end
+
+    if not stream_fields and not created_fields
+        return nil
+    end
+    
+    stream_fields = Array.new if not stream_fields
+    created_fields = Array.new if not created_fields
+
+    fields = stream_fields + created_fields
+    
+    return fields.compact
 end
 
-def prepare
-    # do nothing
-end
 def is_terminal
     return false
 end
 def creates_dataset
     return false
+end
+def created_fields
+    return Array.new
+end
+def field_map
+    return field_identity_map
+end
+def field_identity_map
+    input = input_pipe
+    if !input
+        return nil
+    else
+        fields = input.fields
+        if !fields
+            return nil
+        else
+            return fields.collect { |f| [f, f] }
+        end
+    end
 end
 
 def input_limit
@@ -89,39 +114,35 @@ def label
     return @label
 end
 
-def input_nodes_changed
-    # Do nothing, make it node specific
-end
-
 def prepare
     # Do nothing, make it node specific
 end
 
-def add_input_node(node)
-    return if @input_nodes.include?(node)
+def add_input_pipe(pipe)
+    return if @input_pipes.include?(pipe)
 
-    if @input_nodes.count >= input_limit
-        raise ArgumentError, "No more nodes can be added to this node. Limit #{input_limit}, nodes #{@input_nodes.count}"
+    if @input_pipes.count >= input_limit
+        raise ArgumentError, "No more pipes can be added to this node. Limit #{input_limit}, pipes #{@input_pipes.count}"
     end
     
-    @input_nodes << node
-    input_nodes_changed
+    @input_pipes << pipe
 end
 
-def remove_input_node(node)
-    @input_nodes.delete(node)
-    input_nodes_changed
+def remove_input_pipe(pipe)
+    @input_pipes.delete(pipe)
 end
 
-def input_node
-    @input_nodes[0]
+def input_pipe
+    if @input_pipes
+        return @input_pipes[0]
+    else
+        return nil
+    end
 end
 
-def set_output_node(node)
+def output_pipe=(pipe)
     # Check node type
-    @output_node = node
+    @output_pipe = pipe
 end
-def created_fields
-    return nil
-end
+
 end

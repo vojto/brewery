@@ -7,7 +7,7 @@ class TestNodes < Test::Unit::TestCase
 def setup
     # Memory database
     # @connection = Sequel.connect('sqlite:/')
-    @connection = Sequel.connect('sqlite://test/datastore.sqlite')
+    @connection = Sequel.connect('sqlite://datastore.sqlite')
 
     @fields = Array.new
 

@@ -3,6 +3,7 @@ require 'record'
 require 'csv'
 
 class FileSourceNode < SourceNode
+attr_accessor :file_fields
 attr_accessor :filename
 attr_accessor :reads_field_names
 attr_accessor :skiped_header_lines_count
@@ -50,7 +51,7 @@ def creates_dataset
 end
 
 def created_fields
-    return @fields
+    return @file_fields
 end
 
 def set_storage_type_for_field(field_name, storage_type)
