@@ -107,7 +107,9 @@ def field_identity_map
         if !fields
             return nil
         else
-            return FieldMap.new(fields)
+            map = FieldMap.new
+            map.add_fields(input, fields)
+            return map
         end
     end
 end

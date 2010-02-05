@@ -45,7 +45,8 @@ def rebuild_field_map
     @input_pipes.each { |pipe|
         pipe.fields.each { |field|
             if not (pipe != first_pipe and @key_field_names.include?(field.name))
-                @field_map.add_mapping(field, field, :pipe => pipe)
+                mapping = FieldMapping.new_identity(pipe, field)
+                @field_map.add_mapping(mapping)
             else
             end
         }

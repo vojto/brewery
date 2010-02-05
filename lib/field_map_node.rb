@@ -47,19 +47,18 @@ def field_map
 
     map = FieldMap.new
     
-    fields.each { |field| 
-        if @deleted_fields.include?(field.name)
-            new_field = nil
+    fields.each { |source_field| 
+        if @deleted_fields.include?(source_field.name)
+            target_field = nil
         else
-            new_name = @renamed_fields[field.name]
+            new_name = @renamed_fields[source_field.name]
+            target_field = source_field.clone
             if new_name
-                new_field = field.clone
-                new_field.name = new_name
-            else
-                new_field = field
+                target_field.name = new_name
             end
         end
-        map.add_mapping(field, new_field, :pipe => input)
+        mapping = FieldMapping.new(input, source_field, target_field)
+        map.add_mapping(mapping)
     }
     return map
 end

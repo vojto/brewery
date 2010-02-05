@@ -76,39 +76,37 @@ def test_field_map_node
 
     map = node.field_map
 
-    field = map.field_for_input_field(@field_amount)
+    field = map.field_for_source_field(@field_amount)
     assert_equal("salary", field.name, "field 'amount' should be renamed to 'salary'")
 
-    field = map.field_for_input_field(@field_name)
+    field = map.field_for_source_field(@field_name)
     assert_equal(nil, field, "field 'name' should be deleted")
 
     node.reset_field_name("amount")
     node.set_field_action("name", :keep)
 
     map = node.field_map
-    field = map.field_for_input_field(@field_amount)
+    field = map.field_for_source_field(@field_amount)
     assert_equal("amount", field.name, "field 'salary' should be renamed back to 'amount'")
 
-    field = map.field_for_input_field(@field_name)
+    field = map.field_for_source_field(@field_name)
     assert_not_equal(nil, field, "field 'name' should be kept")
 end
 
-def test_join_node
+def test_merge_node
     node = MergeNode.new
     
 
     node.add_input_pipe(@pipe)
     node.add_input_pipe(@pipe2)
-    
-    # assert_raise ArgumentError do
-    #     node.field_map
-    # end
     assert_equal(8, node.possible_key_fields.count)
 
     node.key_field_names = ["customer_id"]
-    
     assert_equal(7, node.field_map.count)
     
+    node.remove_input_pipe(@pipe)
+    assert_equal(4, node.field_map.count)
+
     # puts node.sql_statement
 end
 
