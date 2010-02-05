@@ -8,11 +8,14 @@ require 'stream'
 require 'file_source_node'
 
 # Record Processing Nodes
-require 'aggregation_node'
-require 'derive_node'
-require 'type_node'
-require 'field_map_node'
 require 'merge_node'
+require 'aggregate_node'
+require 'select_node'
+
+# Field Nodes
+require 'derive_node'
+require 'field_map_node'
+# require 'type_node'
 
 # Output Nodes
 require 'table_output_node'

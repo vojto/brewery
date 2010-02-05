@@ -1,86 +1,62 @@
 require 'node'
 
-class AggregationNode < Node
+class AggregateNode < Node
 
-def initialize
+def initialize(hash = {})
+    super(hash)
     @aggregations = Array.new
+    @group_fields = Array.new
 end
 
-def add_aggregation(output_field, input_field, aggregation)
-    agg = Hash.new
-    agg[:output] = output_field
-    agg[:input] = input_field
-    agg[:aggregation] = aggregation
+def add_aggregation(aggregation, input_field, output_field_name)
+    agg = { :output => output_field_name,
+            :input => input_field,
+            :aggregation => aggregation }
+            
     @aggregations << agg
+    rebuild_field_map
+end
+
+
+def group_fields= (fields)
+    @group_fields = fields
+    rebuild_field_map
 end
 
 def remove_aggregation(output_field)
     @aggregations = @aggregations.reject { |a| a[:output] = output_field }
+    rebuild_field_map
 end
 
-def fields
-    fields = Array.new
-    @aggregations.each { |agg|
-        field = Field.new
-        field.name = agg[:output]
-        # FIXME: add field types
-        fields << field
-    }
-    return fields
-end
+def rebuild_field_map
+    @field_map = FieldMap.new
 
-def evaluate
-    # Ruby evaluation
-    
-    @records = Array.new
-    agg_values = Hash.new
-    count = 0
-    input_node.each { |record|
-        @aggregations.each { |agg|
-            input = agg[:input]
-            output = agg[:output]
-            value = record[input]
-            prev_value = agg_values[output]
-
-            case agg[:aggregation]
-            when :sum, :average
-                if !prev_value
-                    prev_value = 0
-                end
-                agg_values[output] = prev_value + value.to_f
-            when :min
-                agg_values[output] = [agg_values[output], value].min
-            when :max
-                agg_values[output] = [agg_values[output], value].max
-            else
-                # invalid aggregation
-            end
-        }
-        count = count + 1
+    @group_fields.each { |field|
+        mapping = FieldMapping.new_created(self, field)
+        @field_map.add_mapping(mapping)
     }
-    
-    @aggregations.each { |agg|
-        if agg[:aggregation] == :average
-            output = agg[:output]
-            agg_values[output] = agg_values[output] / count
+
+    @aggregations.each {|a|
+        input = a[:input]
+        out_name = a[:output]
+        agg = a[:aggregation]
+        in_storage = input.storage_type
+        in_type = input.field_type
+        
+        out_type = in_type
+        if [:sum, :average].include?(agg)
+            out_type = :range
         end
-    }
-    
-    record = Record.new
-    record.fields = self.fields
-    
-    values = Array.new
-    @aggregations.each { |agg|
-        values << agg_values[agg[:output]]
-    }
-    record.values = values
 
-    @records = Array.new
-    @records << agg_values
+        if [:min, :max].include?(agg) and [:integer, :float].include(in_storage)
+            out_type = :range
+        end
+        
+        field = Field.new(out_name, :storage_type => in_storage, :field_type => out_type)
+        mapping = FieldMapping.new_created(self, field)
+        @field_map.add_mapping(mapping)
+    }
 end
 
-def records
-    return @records
-end
 
 end

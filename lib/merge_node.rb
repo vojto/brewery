@@ -4,12 +4,10 @@ require 'field_map'
 class MergeNode < Node
 
 attr_reader :key_field_names
-attr_reader :field_map
 
 def initialize(hash = {})
     super(hash)
     
-    @field_map = FieldMap.new
     @key_field_names = Array.new
 end
 
@@ -22,15 +20,7 @@ def possible_key_fields
 end
 
 def created_fields
-    raise NotImplementedError
-end
-
-def input_pipes_changed
-    rebuild_field_map
-end
-
-def field_map
-    return @field_map
+    return @field_map.output_fields
 end
 
 def key_field_names= (fields)

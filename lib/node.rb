@@ -11,6 +11,7 @@ attr_reader   :generated_fields
 attr_reader   :creates_dataset
 attr_accessor :finished
 
+attr_reader   :field_map
 # Stream
 attr_reader   :input_pipes
 attr_reader   :output_pipe
@@ -57,23 +58,13 @@ def execute(input_datasets, output_dataset)
 end
 
 def fields
-    created_fields = self.created_fields
     map = self.field_map
 
-    if map
-        stream_fields = map.output_fields
+    if !map
+        return Array.new
     end
 
-    if not stream_fields and not created_fields
-        return nil
-    end
-    
-    stream_fields = Array.new if not stream_fields
-    created_fields = Array.new if not created_fields
-
-    fields = stream_fields + created_fields
-    
-    return fields.compact
+    return map.output_fields
 end
 
 def is_terminal
@@ -81,12 +72,6 @@ def is_terminal
 end
 def creates_dataset
     return false
-end
-def created_fields
-    return Array.new
-end
-def field_map
-    return field_identity_map
 end
 
 def all_input_fields
@@ -98,18 +83,26 @@ def all_input_fields
     return fields
 end
 
-def field_identity_map
+def created_fields
+    return @field_map.created_fields
+end
+
+def rebuild_field_map
+    create_identity_field_map
+end
+
+def create_identity_field_map
+    @field_map = FieldMap.new
+
+    if input_pipes.count > 1
+        raise RuntimeError, "Unable to create default identity map for multiple inputs."
+    end
+
     input = input_pipe
-    if !input
-        return nil
-    else
+    if input
         fields = input.fields
-        if !fields
-            return nil
-        else
-            map = FieldMap.new
-            map.add_fields(input, fields)
-            return map
+        if fields
+            @field_map.add_fields(input, fields)
         end
     end
 end
@@ -171,6 +164,7 @@ def input_pipe_removed(pipe)
     # do nothing
 end
 def input_pipes_changed
+    rebuild_field_map
     # do nothing
 end
 

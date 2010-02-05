@@ -20,6 +20,8 @@ def prepare
     if @reads_field_names
         read_field_names
     end
+    
+    rebuild_field_map
 end
 
 def read_field_names
@@ -31,27 +33,36 @@ def read_field_names
     header = @reader.shift
     
     # Create fields
-    @fields = Array.new
+    @file_fields = Array.new
     
     header.each { |field_name|
         field = Field.new
         field.name = field_name
         field.storage_type = :string
         field.data_type = :default
-        @fields << field
+        @file_fields << field
     }
 
     # FIXME: guess types
     
     @reader.close
+    
+    rebuild_field_map
 end
 
 def creates_dataset
     return true
 end
 
-def created_fields
-    return @file_fields
+def rebuild_field_map
+    @field_map = FieldMap.new
+
+    if @file_fields
+        @file_fields.each {|field|
+            mapping = FieldMapping.new_created(self, field)
+            @field_map.add_mapping(mapping)
+        }
+    end
 end
 
 def set_storage_type_for_field(field_name, storage_type)
