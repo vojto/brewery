@@ -4,10 +4,9 @@ require 'brewery'
 
 class TestNodes < Test::Unit::TestCase
 def setup
-    @test_file = 'test/test.csv'
+    @test_file = 'data/customers.csv'
 
     # Set-up some fields
-
     @field_id = Field.new("customer_id", :storage_type => :integer, :field_type => :set)
     @field_name = Field.new("name", :storage_type => :string, :field_type => :set)
     @field_surname = Field.new("surname", :storage_type => :string, :field_type => :set)
@@ -16,8 +15,10 @@ def setup
 
     @fields = [@field_id, @field_name, @field_surname, @field_city, @field_amount]
 
-    @input_count = @fields.count
 
+    @input_count = @fields.count
+    @file_input_count = 4
+    
     @pipe = Pipe.new
     @pipe.fields = @fields
 
@@ -45,6 +46,15 @@ def test_file_source_node
     assert_equal(true, node.creates_dataset)
 
     assert_equal(@input_count, node.created_fields.count, "created fields")
+
+    node.reads_field_names = true
+    node.field_separator = ';'
+    node.prepare
+    
+    fields = node.fields
+    assert_equal(@file_input_count, fields.count, "field count in the file does not match")
+    assert_equal(@file_input_count, node.created_fields.count, "created fields")
+
 end
 
 def test_derive_node
@@ -135,13 +145,18 @@ def test_aggregate_node
     node = AggregateNode.new
 
     node.add_input_pipe(@pipe)
-    node.add_aggregation(:sum, @field_amount, "amount_sum")
-    node.add_aggregation(:average, @field_amount, "amount_avg")
+    assert_raises ArgumentError do
+        node.set_field_aggregations(nil, [:sum, :avg])
+    end
+    node.set_field_aggregations(@field_amount, [:sum, :avg])
     
     assert_equal(2, node.fields.count, "total output fields")
     assert_equal(2, node.created_fields.count, "created fields")
     
     node.group_fields = [@field_city]
-    assert_equal(3, node.fields.count, "total output fields")
+    assert_equal(3, node.fields.count, "total output fields with group by")
+    
+    node.include_count = true
+    assert_equal(4, node.fields.count, "total output fields with count")
 end
 end

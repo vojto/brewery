@@ -62,12 +62,16 @@ def connect_nodes(input_node, output_node)
         raise ArgumentError, "Output node does not accept connections"
     end
     
-    if output_node.input_nodes.count > limit
+    if output_node.input_pipes.count > limit
         raise ArgumentError, "Output node has all #{output_node.input_nodes.count} inputs connected."
     end
 
-    output_node.add_input_node(input_node)
-    input_node.set_output_node(output_node)
+    # Create pipe
+    pipe = Pipe.new
+
+    input_node.output_pipe = pipe
+    input_node.update_output_pipe
+    output_node.add_input_pipe(pipe)
 end
 
 def disconnect_nodes(input_node, output_node)

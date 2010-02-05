@@ -8,6 +8,8 @@ attr_accessor :filename
 attr_accessor :reads_field_names
 attr_accessor :skiped_header_lines_count
 attr_accessor :null_value
+attr_accessor :field_separator
+
 
 def initialize(hash = {})
     super(hash)
@@ -25,7 +27,7 @@ def prepare
 end
 
 def read_field_names
-    @reader = CSV.open(filename, 'r')
+    @reader = CSV.open(filename, 'r', @field_separator)
 
     skip_header_lines
     
@@ -36,10 +38,7 @@ def read_field_names
     @file_fields = Array.new
     
     header.each { |field_name|
-        field = Field.new
-        field.name = field_name
-        field.storage_type = :string
-        field.data_type = :default
+        field = Field.new(field_name, :storage_type => :string, :data_type => :default)
         @file_fields << field
     }
 
@@ -83,17 +82,19 @@ def skip_header_lines
 end
 
 def execute
-    @reader = CSV.open(filename, 'r')
+    @reader = CSV.open(filename, 'r', @field_separator)
     skip_header_lines
-    
-    # skip header
     
     if @reads_field_names
         @reader.shift
     end
 
-    table = output_dataset.table
-    map = output_dataset.map
+    table = output_pipe.table
+    columns = Array.new
+    for i in (0..@fields.count-1)
+        column[i] = output_pipe.table_column_for_field(@fields[i])
+    end
+
 
     @reader.each { |line|
         record = Hash.new
@@ -101,8 +102,7 @@ def execute
         # FIXME: map fields and correct storage types
         # FIXME: Add null values
         for i in (0..@fields.count-1)
-            column = map[@fields[i].name]
-            record[column] = line[i]
+            record[column[i]] = line[i]
         end
         table.insert(record)
     }

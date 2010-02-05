@@ -1,8 +1,8 @@
 require 'field'
-require 'dataset'
 require 'class_additions'
 require 'pipe'
 require 'field_map'
+require 'datastore_table'
 
 class Node
 
@@ -53,7 +53,7 @@ def self.new_from_hash(hash)
     return node
 end
 
-def execute(input_datasets, output_dataset)
+def execute
     # do nothing by default
 end
 
@@ -65,6 +65,12 @@ def fields
     end
 
     return map.output_fields
+end
+
+def field_with_name(name)
+    # FIXME: check for name uniqueness
+    field = self.fields.select { |f| f.name = name }.first
+    return field
 end
 
 def is_terminal
@@ -154,6 +160,61 @@ end
 def output_pipe=(pipe)
     # Check node type
     @output_pipe = pipe
+end
+def update_output_pipe
+    @output_pipe.fields = self.fields
+end
+
+def setup_output_pipe_table
+    # should be called only when node is validated
+    # expected:
+    #    created_fields
+    #    input_pipe (only one)
+    #    field map
+    #    input pipe table
+    
+    if not @output_pipe
+        return
+    end
+    
+    if @input_pipes.count > 1
+        raise NotImplementedError, "Unable to setup output pipe with more than one input. Should be overriden in node subclasses"
+    end
+    
+    @output_pipe.fields = self.fields
+
+    output_map = @output_pipe.column_map
+    output_map.clear
+
+    if self.creates_dataset
+        table = DatastoreTable.new
+    else
+        table = self.input_pipe.table
+    end
+
+    if not self.creates_dataset
+        # Remap column map
+        input_map = self.input_pipe.column_map
+        input_fields = self.input_pipe.fields
+    
+        input_fields.each { |input_field|
+            output_field = @field_map.field_for_source_field(input_field)
+            if output_field
+                output_map[output_field] = input_map[input_field]
+                # ignore deleted fields
+            end
+        }
+    end    
+    
+    # Add created column map
+    created_fields = self.created_fields
+    columns = table.create_columns_for_fields(created_fields)
+
+    for i in 0..created_fields.count - 1
+        output_map[created_fields[i]] = columns[i]
+    end
+    @output_pipe.table = table
+    # FIXME: notify that pipe has changed (or not, as this is called for all nodes before execution)
 end
 
 def input_pipe_added(pipe)
