@@ -12,6 +12,7 @@ require 'aggregation_node'
 require 'derive_node'
 require 'type_node'
 require 'field_map_node'
+require 'merge_node'
 
 # Output Nodes
 require 'table_output_node'

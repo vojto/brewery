@@ -2,6 +2,7 @@ require 'field'
 require 'dataset'
 require 'class_additions'
 require 'pipe'
+require 'field_map'
 
 class Node
 
@@ -60,7 +61,7 @@ def fields
     map = self.field_map
 
     if map
-        stream_fields = map.transpose[1]
+        stream_fields = map.output_fields
     end
 
     if not stream_fields and not created_fields
@@ -87,6 +88,16 @@ end
 def field_map
     return field_identity_map
 end
+
+def all_input_fields
+    fields = Array.new
+    for i in 0..input_pipes.count - 1
+        pipe = input_pipes[i]
+        fields = fields + pipe.fields.collect { |field| [field, i, pipe] }
+    end
+    return fields
+end
+
 def field_identity_map
     input = input_pipe
     if !input
@@ -96,7 +107,7 @@ def field_identity_map
         if !fields
             return nil
         else
-            return fields.collect { |f| [f, f] }
+            return FieldMap.new(fields)
         end
     end
 end
@@ -126,10 +137,15 @@ def add_input_pipe(pipe)
     end
     
     @input_pipes << pipe
+    
+    input_pipe_added(pipe)
+    input_pipes_changed
 end
 
 def remove_input_pipe(pipe)
     @input_pipes.delete(pipe)
+    input_pipe_removed(pipe)
+    input_pipes_changed
 end
 
 def input_pipe
@@ -143,6 +159,17 @@ end
 def output_pipe=(pipe)
     # Check node type
     @output_pipe = pipe
+end
+
+def input_pipe_added(pipe)
+    # do nothing
+end
+
+def input_pipe_removed(pipe)
+    # do nothing
+end
+def input_pipes_changed
+    # do nothing
 end
 
 end

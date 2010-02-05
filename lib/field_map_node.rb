@@ -45,7 +45,7 @@ def field_map
         return nil if !fields
     end
 
-    map = Array.new
+    map = FieldMap.new
     
     fields.each { |field| 
         if @deleted_fields.include?(field.name)
@@ -59,9 +59,8 @@ def field_map
                 new_field = field
             end
         end
-        map << [field, new_field]
+        map.add_mapping(field, new_field, :pipe => input)
     }
-    
     return map
 end
 
