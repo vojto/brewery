@@ -1,0 +1,246 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		F8AC8FB4112AB04C00B67D9A /* Test */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = F8AC8FBE112AB04E00B67D9A /* Build configuration list for PBXAggregateTarget "Test" */;
+			buildPhases = (
+				F8AC8FB3112AB04C00B67D9A /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = Test;
+			productName = Test;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXFileReference section */
+		F8136625112D4BA000F6BFA1 /* field_set.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field_set.rb; sourceTree = "<group>"; };
+		F81366BF112D658900F6BFA1 /* field_filter.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field_filter.rb; sourceTree = "<group>"; };
+		F8AC8F79112AAC7C00B67D9A /* aggregate_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = aggregate_node.rb; sourceTree = "<group>"; };
+		F8AC8F7A112AAC7C00B67D9A /* brewery.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = brewery.rb; sourceTree = "<group>"; };
+		F8AC8F7B112AAC7C00B67D9A /* class_additions.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = class_additions.rb; sourceTree = "<group>"; };
+		F8AC8F7C112AAC7C00B67D9A /* data_audit_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = data_audit_node.rb; sourceTree = "<group>"; };
+		F8AC8F7D112AAC7C00B67D9A /* database_connection.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = database_connection.rb; sourceTree = "<group>"; };
+		F8AC8F7E112AAC7C00B67D9A /* dataset.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = dataset.rb; sourceTree = "<group>"; };
+		F8AC8F7F112AAC7C00B67D9A /* datastore_table.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = datastore_table.rb; sourceTree = "<group>"; };
+		F8AC8F80112AAC7C00B67D9A /* datastore.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = datastore.rb; sourceTree = "<group>"; };
+		F8AC8F81112AAC7C00B67D9A /* derive_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = derive_node.rb; sourceTree = "<group>"; };
+		F8AC8F82112AAC7C00B67D9A /* field_filter_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field_filter_node.rb; sourceTree = "<group>"; };
+		F8AC8F83112AAC7C00B67D9A /* field_map.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field_map.rb; sourceTree = "<group>"; };
+		F8AC8F84112AAC7C00B67D9A /* field_mapping.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field_mapping.rb; sourceTree = "<group>"; };
+		F8AC8F85112AAC7C00B67D9A /* field_operation_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field_operation_node.rb; sourceTree = "<group>"; };
+		F8AC8F86112AAC7C00B67D9A /* field.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field.rb; sourceTree = "<group>"; };
+		F8AC8F87112AAC7C00B67D9A /* file_output_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = file_output_node.rb; sourceTree = "<group>"; };
+		F8AC8F88112AAC7C00B67D9A /* file_source_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = file_source_node.rb; sourceTree = "<group>"; };
+		F8AC8F89112AAC7C00B67D9A /* merge_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = merge_node.rb; sourceTree = "<group>"; };
+		F8AC8F8A112AAC7C00B67D9A /* node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = node.rb; sourceTree = "<group>"; };
+		F8AC8F8B112AAC7C00B67D9A /* pipe.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = pipe.rb; sourceTree = "<group>"; };
+		F8AC8F8D112AAC7C00B67D9A /* record.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = record.rb; sourceTree = "<group>"; };
+		F8AC8F8E112AAC7C00B67D9A /* select_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = select_node.rb; sourceTree = "<group>"; };
+		F8AC8F8F112AAC7C00B67D9A /* source_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = source_node.rb; sourceTree = "<group>"; };
+		F8AC8F90112AAC7C00B67D9A /* stream.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = stream.rb; sourceTree = "<group>"; };
+		F8AC8F91112AAC7C00B67D9A /* table_output_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = table_output_node.rb; sourceTree = "<group>"; };
+		F8AC8F92112AAC7C00B67D9A /* terminal_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = terminal_node.rb; sourceTree = "<group>"; };
+		F8AC8F93112AAC7C00B67D9A /* type_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = type_node.rb; sourceTree = "<group>"; };
+		F8AC8FB2112AAF7C00B67D9A /* node_test.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = node_test.rb; sourceTree = "<group>"; };
+		F8AC8FC4112AB1D100B67D9A /* test_suite.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = test_suite.rb; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		F8AC8F69112AAC1600B67D9A = {
+			isa = PBXGroup;
+			children = (
+				F8AC8F75112AAC3D00B67D9A /* Tests */,
+				F8AC8F73112AAC1E00B67D9A /* Nodes */,
+				F8AC8F74112AAC3500B67D9A /* Classes */,
+			);
+			sourceTree = "<group>";
+		};
+		F8AC8F73112AAC1E00B67D9A /* Nodes */ = {
+			isa = PBXGroup;
+			children = (
+				F8AC8F8A112AAC7C00B67D9A /* node.rb */,
+				F8AC8F9C112AADC500B67D9A /* Field Nodes */,
+				F8AC8F9B112AADBA00B67D9A /* Record Nodes */,
+				F8AC8F9A112AADB100B67D9A /* Terminal Nodes */,
+				F8AC8F99112AADA600B67D9A /* Source Nodes */,
+			);
+			name = Nodes;
+			path = lib;
+			sourceTree = "<group>";
+		};
+		F8AC8F74112AAC3500B67D9A /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				F8AC8F7A112AAC7C00B67D9A /* brewery.rb */,
+				F8AC8F7B112AAC7C00B67D9A /* class_additions.rb */,
+				F8AC8F7D112AAC7C00B67D9A /* database_connection.rb */,
+				F8AC8F7E112AAC7C00B67D9A /* dataset.rb */,
+				F8AC8F7F112AAC7C00B67D9A /* datastore_table.rb */,
+				F8AC8F80112AAC7C00B67D9A /* datastore.rb */,
+				F8AC8F83112AAC7C00B67D9A /* field_map.rb */,
+				F8AC8F84112AAC7C00B67D9A /* field_mapping.rb */,
+				F8AC8F8B112AAC7C00B67D9A /* pipe.rb */,
+				F8AC8F8D112AAC7C00B67D9A /* record.rb */,
+				F8AC8F90112AAC7C00B67D9A /* stream.rb */,
+				F8AC8F86112AAC7C00B67D9A /* field.rb */,
+				F8136625112D4BA000F6BFA1 /* field_set.rb */,
+				F81366BF112D658900F6BFA1 /* field_filter.rb */,
+			);
+			name = Classes;
+			path = lib;
+			sourceTree = "<group>";
+		};
+		F8AC8F75112AAC3D00B67D9A /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				F8AC8FC4112AB1D100B67D9A /* test_suite.rb */,
+				F8AC8FB2112AAF7C00B67D9A /* node_test.rb */,
+			);
+			name = Tests;
+			path = test;
+			sourceTree = "<group>";
+		};
+		F8AC8F99112AADA600B67D9A /* Source Nodes */ = {
+			isa = PBXGroup;
+			children = (
+				F8AC8F88112AAC7C00B67D9A /* file_source_node.rb */,
+				F8AC8F8F112AAC7C00B67D9A /* source_node.rb */,
+			);
+			name = "Source Nodes";
+			sourceTree = "<group>";
+		};
+		F8AC8F9A112AADB100B67D9A /* Terminal Nodes */ = {
+			isa = PBXGroup;
+			children = (
+				F8AC8F87112AAC7C00B67D9A /* file_output_node.rb */,
+				F8AC8F92112AAC7C00B67D9A /* terminal_node.rb */,
+				F8AC8F7C112AAC7C00B67D9A /* data_audit_node.rb */,
+				F8AC8F91112AAC7C00B67D9A /* table_output_node.rb */,
+			);
+			name = "Terminal Nodes";
+			sourceTree = "<group>";
+		};
+		F8AC8F9B112AADBA00B67D9A /* Record Nodes */ = {
+			isa = PBXGroup;
+			children = (
+				F8AC8F79112AAC7C00B67D9A /* aggregate_node.rb */,
+				F8AC8F89112AAC7C00B67D9A /* merge_node.rb */,
+				F8AC8F8E112AAC7C00B67D9A /* select_node.rb */,
+			);
+			name = "Record Nodes";
+			sourceTree = "<group>";
+		};
+		F8AC8F9C112AADC500B67D9A /* Field Nodes */ = {
+			isa = PBXGroup;
+			children = (
+				F8AC8F82112AAC7C00B67D9A /* field_filter_node.rb */,
+				F8AC8F85112AAC7C00B67D9A /* field_operation_node.rb */,
+				F8AC8F93112AAC7C00B67D9A /* type_node.rb */,
+				F8AC8F81112AAC7C00B67D9A /* derive_node.rb */,
+			);
+			name = "Field Nodes";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		F8AC8F6B112AAC1600B67D9A /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = F8AC8F6E112AAC1600B67D9A /* Build configuration list for PBXProject "brewery" */;
+			compatibilityVersion = "Xcode 2.4";
+			hasScannedForEncodings = 0;
+			mainGroup = F8AC8F69112AAC1600B67D9A;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F8AC8FB4112AB04C00B67D9A /* Test */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		F8AC8FB3112AB04C00B67D9A /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here\n\ncd test\n$RUBY -I../lib -I. test_suite.rb\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F8AC8F6C112AAC1600B67D9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Debug;
+		};
+		F8AC8F6D112AAC1600B67D9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+			};
+			name = Release;
+		};
+		F8AC8FB5112AB04C00B67D9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = Test;
+				RUBY = ruby;
+			};
+			name = Debug;
+		};
+		F8AC8FB6112AB04C00B67D9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				PRODUCT_NAME = Test;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F8AC8F6E112AAC1600B67D9A /* Build configuration list for PBXProject "brewery" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F8AC8F6C112AAC1600B67D9A /* Debug */,
+				F8AC8F6D112AAC1600B67D9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F8AC8FBE112AB04E00B67D9A /* Build configuration list for PBXAggregateTarget "Test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F8AC8FB5112AB04C00B67D9A /* Debug */,
+				F8AC8FB6112AB04C00B67D9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F8AC8F6B112AAC1600B67D9A /* Project object */;
+}

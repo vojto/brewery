@@ -18,16 +18,34 @@ def initialize(hash = {})
 
 end
     
+################################################################
+# Node specification
+
+def creates_dataset
+    return true
+end
+
+def created_fields
+	return fields
+end
+
+def fields
+	fields = FieldSet.new(@file_fields)
+	return fields	
+end
+
+
+################################################################
+# Node properties
+
 def prepare
     if @reads_field_names
         read_field_names
     end
-    
-    rebuild_field_map
 end
 
 def read_field_names
-    @reader = CSV.open(filename, 'r', @field_separator)
+    @reader = CSV.open(@filename, 'r', @field_separator)
 
     skip_header_lines
     
@@ -45,32 +63,6 @@ def read_field_names
     # FIXME: guess types
     
     @reader.close
-    
-    rebuild_field_map
-end
-
-def creates_dataset
-    return true
-end
-
-def rebuild_field_map
-    @field_map = FieldMap.new
-
-    if @file_fields
-        @file_fields.each {|field|
-            mapping = FieldMapping.new_created(self, field)
-            @field_map.add_mapping(mapping)
-        }
-    end
-end
-
-def set_storage_type_for_field(field_name, storage_type)
-    field = fields.detect { |f| f.name.to_s == field_name.to_s }
-    if field
-        field.storage_type = storage_type
-    else
-        raise "Unknown field #{field_name}"
-    end
 end
 
 def skip_header_lines
@@ -81,47 +73,6 @@ def skip_header_lines
     end
 end
 
-def execute
-    @reader = CSV.open(filename, 'r', @field_separator)
-    skip_header_lines
-    
-    if @reads_field_names
-        @reader.shift
-    end
 
-    table = output_pipe.table
-    columns = Array.new
-    for i in (0..@fields.count-1)
-        column[i] = output_pipe.table_column_for_field(@fields[i])
-    end
-
-
-    @reader.each { |line|
-        record = Hash.new
-    
-        # FIXME: map fields and correct storage types
-        # FIXME: Add null values
-        for i in (0..@fields.count-1)
-            record[column[i]] = line[i]
-        end
-        table.insert(record)
-    }
-end
-
-def hash_from_row(row)
-
-    return hash
-end
-
-def record_from_row(row)
-    record = Record.new
-
-    # FIXME: map fields and correct storage types
-    # FIXME: Add null values
-    record.values = row.collect { |v| v.to_s }
-    record.fields = @fields
-
-    return record
-end
 
 end

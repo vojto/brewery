@@ -13,8 +13,8 @@ def setup
     @field_city = Field.new("city", :storage_type => :string, :field_type => :set)
     @field_amount = Field.new("amount", :storage_type => :integer, :field_type => :range)
 
-    @fields = [@field_id, @field_name, @field_surname, @field_city, @field_amount]
-
+	array = [@field_id, @field_name, @field_surname, @field_city, @field_amount]
+    @fields = FieldSet.new(array)
 
     @input_count = @fields.count
     @file_input_count = 4
@@ -22,7 +22,7 @@ def setup
     @pipe = Pipe.new
     @pipe.fields = @fields
 
-    fields = Array.new
+    fields = FieldSet.new
     fields << Field.new("invoice_id", :storage_type => :integer, :field_type => :set)
     fields << Field.new("customer_id", :storage_type => :integer, :field_type => :set)
     fields << Field.new("invoice_date", :storage_type => :date, :field_type => :range)
@@ -32,6 +32,37 @@ def setup
     @pipe2.fields = fields
 
     @input2_count = fields.count
+end
+
+def test_aggregate_node
+    node = AggregateNode.new
+
+	# Configure node
+    assert_raises ArgumentError do
+        node.set_field_aggregations(nil, [:sum, :avg])
+    end
+
+	node.set_field_aggregations("amount", [:sum, :avg])
+
+    assert_equal(2, node.fields.count, "total output fields")
+    assert_equal(2, node.created_fields.count, "created fields")
+
+    node.group_fields = ["city"]
+    assert_equal(3, node.fields.count, "total output fields with group by")
+    
+
+    node.include_count = true
+    assert_equal(4, node.fields.count, "total output fields with count")
+
+	field = node.fields.field_with_name("city")
+	assert_equal(:unknown, field.storage_type)
+	assert_equal(:unknown, field.field_type)
+
+    node.add_input_pipe(@pipe)
+
+	field = node.fields.field_with_name("city")
+	assert_equal(:string, field.storage_type)
+	assert_equal(:set, field.field_type)
 end
 
 def test_file_source_node
@@ -54,14 +85,13 @@ def test_file_source_node
     fields = node.fields
     assert_equal(@file_input_count, fields.count, "field count in the file does not match")
     assert_equal(@file_input_count, node.created_fields.count, "created fields")
-
 end
 
 def test_derive_node
     node = DeriveNode.new
     node.derived_field_name = "full_name"
     
-    assert_equal(0, node.fields.count, "field count in derive node does not match")
+    assert_equal(1, node.fields.count, "field count in derive node does not match")
 
     node.add_input_pipe(@pipe)
     assert_equal(@input_count + 1, node.fields.count, "field count in derive node does not match")
@@ -75,58 +105,78 @@ def test_derive_node
     end
 end
 
-def test_field_map_node
-    node = FieldMapNode.new
-    assert_equal(nil, node.field_map)
+def test_field_filter_node
+    node = FieldFilterNode.new
+	filter = node.field_filter
+	
+    assert_equal(nil, node.created_fields)
+    assert_equal(nil, node.fields)
 
     node.add_input_pipe(@pipe)
+	node.instantiate_fields
+	
+    assert_not_equal(nil, node.fields)
+    assert_equal(@input_count, node.fields.count, "field count after connection")
+
+	fields = node.fields
+    assert_not_equal(nil, fields.field_with_name("amount"))
+    assert_equal(nil, fields.field_with_name("salary"))
+    assert_not_equal(nil, fields.field_with_name("name"))
     
-    map = node.field_map
-    assert_not_equal(nil, map)
-    
-    # Check whether the map is identity map
-    assert_not_equal(false, map.is_identity_map)
-    
-    node.set_field_name(@field_amount, "salary")
-    node.set_field_action(@field_name, :delete)
+	# create filter
+
+    filter.set_field_name("amount", "salary")
+    filter.set_field_action("name", :delete)
+    assert_equal(nil, node.created_fields, "created fields")
 
     assert_equal(@input_count - 1, node.fields.count, "field count after map")
-    assert_equal(0, node.created_fields.count, "created fields")
 
-    map = node.field_map
+	fields = node.fields
+    assert_equal(nil, fields.field_with_name("amount"))
+    assert_not_equal(nil, fields.field_with_name("salary"))
+    assert_equal(nil, fields.field_with_name("name"))
 
-    field = map.field_for_source_field(@field_amount)
-    assert_equal("salary", field.name, "field 'amount' should be renamed to 'salary'")
+	# Disconnect and reconnect
+    node.remove_input_pipe(@pipe)
+	fields = node.fields
+    assert_equal(nil, fields.field_with_name("amount"))
+    assert_not_equal(nil, fields.field_with_name("salary"))
+    assert_equal(nil, fields.field_with_name("name"))
 
-    field = map.field_for_source_field(@field_name)
-    assert_equal(nil, field, "field 'name' should be deleted")
+    node.add_input_pipe(@pipe)
 
-    node.reset_field_name(@field_amount)
-    node.set_field_action(@field_name, :keep)
+	# Reset fields
+    filter.reset_field_name("amount")
+    filter.set_field_action("name", :keep)
 
-    map = node.field_map
-    field = map.field_for_source_field(@field_amount)
-    assert_equal("amount", field.name, "field 'salary' should be renamed back to 'amount'")
-
-    field = map.field_for_source_field(@field_name)
-    assert_not_equal(nil, field, "field 'name' should be kept")
-    assert_equal(0, node.created_fields.count, "created fields")
+	fields = node.fields
+    assert_not_equal(nil, fields.field_with_name("amount"))
+    assert_equal(nil, fields.field_with_name("salary"))
+    assert_not_equal(nil, fields.field_with_name("name"))
 end
 
 def test_merge_node
     node = MergeNode.new
     
-
     node.add_input_pipe(@pipe)
+	node.set_tag_for_input(@pipe, "a")
+	assert_not_equal(nil, node.tag_for_input(@pipe))
+	assert_equal(nil, node.tag_for_input(@pipe2))
+	node.set_tag_for_input(@pipe2, "b")
+	
     node.add_input_pipe(@pipe2)
-    assert_equal(@input_count + @input2_count, node.possible_key_fields.count)
+	
+	possible_keys = node.possible_keys
+    assert_equal(1, possible_keys.count)
 
+	assert_equal("customer_id", possible_keys[0])
+	
     node.key_field_names = ["customer_id"]
-    assert_equal(@input_count + @input2_count - 1, node.field_map.count)
+    assert_equal(@input_count + @input2_count - 1, node.fields.count)
     assert_equal(@input_count + @input2_count - 1, node.created_fields.count, "created fields")
     
     node.remove_input_pipe(@pipe)
-    assert_equal(@input2_count, node.field_map.count)
+    assert_equal(@input2_count, node.fields.count)
     assert_equal(@input2_count, node.created_fields.count, "created fields")
 
     # puts node.sql_statement
@@ -135,28 +185,18 @@ end
 def test_select_node
     node = SelectNode.new
 
+    assert_equal(0, node.fields.count, "total output fields")
+    assert_equal(0, node.created_fields.count, "created fields")
+
     node.add_input_pipe(@pipe)
     
     assert_equal(@input_count, node.fields.count, "total output fields")
     assert_equal(@input_count, node.created_fields.count, "created fields")
+
+    node.remove_input_pipe(@pipe)
+
+    assert_equal(0, node.fields.count, "total output fields")
+    assert_equal(0, node.created_fields.count, "created fields")
 end
 
-def test_aggregate_node
-    node = AggregateNode.new
-
-    node.add_input_pipe(@pipe)
-    assert_raises ArgumentError do
-        node.set_field_aggregations(nil, [:sum, :avg])
-    end
-    node.set_field_aggregations(@field_amount, [:sum, :avg])
-    
-    assert_equal(2, node.fields.count, "total output fields")
-    assert_equal(2, node.created_fields.count, "created fields")
-    
-    node.group_fields = [@field_city]
-    assert_equal(3, node.fields.count, "total output fields with group by")
-    
-    node.include_count = true
-    assert_equal(4, node.fields.count, "total output fields with count")
-end
 end

@@ -11,7 +11,7 @@ attr_reader :missing_values
 def initialize(name, hash = {})
     @name = name.to_s
     @storage_type = hash[:storage_type]
-    @data_type = hash[:field_type]
+    @field_type = hash[:field_type]
     @missing_values = hash[:missing_values]
 end
 

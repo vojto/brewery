@@ -7,7 +7,6 @@ require 'datastore_table'
 class Node
 
 attr_writer   :label
-attr_reader   :generated_fields
 attr_reader   :creates_dataset
 attr_accessor :finished
 
@@ -17,6 +16,9 @@ attr_reader   :input_pipes
 attr_reader   :output_pipe
 
 @@node_label_number = 0
+
+################################################################
+# Node Initialization
 
 def initialize(hash = {})
     @input_pipes = Array.new
@@ -53,24 +55,15 @@ def self.new_from_hash(hash)
     return node
 end
 
-def execute
-    # do nothing by default
-end
+################################################################
+# Node specification
 
 def fields
-    map = self.field_map
-
-    if !map
-        return Array.new
-    end
-
-    return map.output_fields
+	raise RuntimeError, "Node subclasses should override method 'fields'"
 end
 
-def field_with_name(name)
-    # FIXME: check for name uniqueness
-    field = self.fields.select { |f| f.name = name }.first
-    return field
+def created_fields
+	return nil
 end
 
 def is_terminal
@@ -81,17 +74,22 @@ def creates_dataset
 end
 
 def all_input_fields
-    fields = Array.new
-    for i in 0..input_pipes.count - 1
-        pipe = input_pipes[i]
-        fields = fields + pipe.fields.collect { |field| [field, i, pipe] }
-    end
-    return fields
+	fields = FieldSet.new
+	@input_pipes.each { | pipe |
+		fields.add_fields_from_fieldset(pipe.fields)
+	}
+	return fields
 end
 
-def created_fields
-    return @field_map.created_fields
+################################################################
+# Notifications
+
+def fields_changed
+	# do nothing by default
 end
+
+################################################################
+# Other...
 
 def rebuild_field_map
     create_identity_field_map
@@ -225,7 +223,6 @@ def input_pipe_removed(pipe)
     # do nothing
 end
 def input_pipes_changed
-    rebuild_field_map
     # do nothing
 end
 

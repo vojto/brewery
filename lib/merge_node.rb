@@ -4,44 +4,75 @@ require 'field_map'
 class MergeNode < Node
 
 attr_reader :key_field_names
+attr_accessor :field_filter
 
 def initialize(hash = {})
     super(hash)
     
     @key_field_names = Array.new
+	@input_tags = Hash.new
+
+	# FIXME: implement field filters per input/input tag
 end
+
+################################################################
+# Node specification
 
 def creates_dataset
     return true
 end
-
-def possible_key_fields
-    return all_input_fields
-end
-
+# FIXME: continue here
 def created_fields
-    return @field_map.output_fields
-end
+	fields = FieldSet.new
+	
+	first_pipe = input_pipe
 
-def key_field_names= (fields)
-    @key_field_names = fields
-    rebuild_field_map
-end
-
-def rebuild_field_map
-    # FIXME: should retain original map!
-    @field_map = FieldMap.new
-    first_pipe = input_pipe
+	# Other fields
     @input_pipes.each { |pipe|
         pipe.fields.each { |field|
-            if not (pipe != first_pipe and @key_field_names.include?(field.name))
-                mapping = FieldMapping.new_identity(pipe, field)
-                @field_map.add_mapping(mapping)
-            else
+            if pipe == first_pipe or not @key_field_names.include?(field.name)
+				# not first and not key
+				fields << field
             end
         }
     }
+	return fields
 end
+
+def fields
+	return created_fields
+end
+
+
+################################################################
+# Node properties
+
+def key_field_names= (fields)
+    @key_field_names = fields
+	fields_changed
+end
+
+def possible_keys
+	
+	keys = input_pipe.fields.field_names
+			
+	input_pipes.each { |pipe|
+		keys = keys & pipe.fields.field_names
+	}
+
+    return keys
+end
+
+def set_tag_for_input(input, tag)
+	@input_tags[input] = tag
+end
+
+def tag_for_input(input)
+	return @input_tags[input]
+end
+
+################################################################
+# Execution
 
 def sql_statement
     i = 0

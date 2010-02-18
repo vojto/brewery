@@ -1,4 +1,5 @@
 require 'node'
+require 'field_set'
 
 class AggregateNode < Node
 
@@ -9,71 +10,95 @@ attr_reader   :include_count
 
 def initialize(hash = {})
     super(hash)
-    @agg_fields = Hash.new
+    @field_aggs = Hash.new
     @group_fields = Array.new
 end
 
-def creates_dataset
-    return true
-end
+################################################################
+# Node properties
 
-def set_field_aggregations(input_field, aggregations)
+def set_field_aggregations(field_name, aggregations)
     # FIXME: check input field type to be numeric
     
-    if not input_field
-        raise ArgumentError, "Could not set aggregations to nil field"
+    if not field_name
+        raise ArgumentError, "Nil field name given for aggregation"
     end
     
-    @agg_fields[input_field] = aggregations
+    @field_aggs[field_name] = aggregations
 
-    rebuild_field_map
+	fields_changed
+end
+
+def remove_aggregation(field_name)
+    @field_aggs.delete[field_name]
+	fields_changed
 end
 
 def include_count= (flag)
     if flag != @include_count
         @include_count = flag
-        rebuild_field_map
     end
+	fields_changed
 end
 
 def group_fields= (fields)
     @group_fields = fields
-    rebuild_field_map
+	fields_changed
 end
 
-def remove_aggregation(output_field)
-    @agg_fields.delete[output_field]
-    rebuild_field_map
+################################################################
+# Node specification
+
+def creates_dataset
+    return true
 end
 
-def rebuild_field_map
-    @field_map = FieldMap.new
+def created_fields
+    return fields
+end
 
-    @group_fields.each { |field|
-        mapping = FieldMapping.new_created(self, field)
-        @field_map.add_mapping(mapping)
+def fields
+	fields = FieldSet.new
+	
+	# Group fields 
+	input_fields = all_input_fields
+    @group_fields.each { |field_name|
+	
+		input_field = input_fields.field_with_name(field_name)
+		if input_field
+			field = input_field.clone
+			field.name = field_name
+		else
+			field = Field.new(field_name, :storage_type => :unknown,
+									:field_type => :unknown)
+		end
+		fields << field
     }
 
+	# Aggregations 
+	
     ext = @name_extension
 
-    @agg_fields.each_key {|field|
-        aggs = @agg_fields[field]
+    @field_aggs.each_key {|field_name|
+        aggs = @field_aggs[field_name]
+		
         aggs.each { |agg|
             if @extension_as_prefix
                 ext = "#{ext}_" if ext
-                name = "#{agg}#{ext}#{field.name}"
+                name = "#{agg}_#{ext}#{field_name}"
             else
                 ext = "_#{ext}" if ext
-                name = "#{field.name}#{ext}#{agg}"
+                name = "#{field_name}#{ext}_#{agg}"
             end
 
             field = Field.new(name, :storage_type => :float,
                                     :field_type => :range)
-            mapping = FieldMapping.new_created(self, field)
-            @field_map.add_mapping(mapping)
+			fields << field
         }
     }
 
+	# Count field
+	
     if include_count
         if count_field_name
             name = count_field_name
@@ -83,14 +108,10 @@ def rebuild_field_map
         
         field = Field.new(name, :storage_type => :integer,
                                 :field_type => :range)
-        mapping = FieldMapping.new_created(self, field)
-        @field_map.add_mapping(mapping)
+        fields << field
     end
-
-end
-
-def created_fields
-    return @field_map.output_fields
+	
+	return fields
 end
 
 end

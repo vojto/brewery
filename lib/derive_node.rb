@@ -7,14 +7,22 @@ attr_accessor :derived_field_type
 attr_accessor :derived_value_type # formula, set
 attr_accessor :derived_value
 
-def rebuild_field_map
-    create_identity_field_map
+################################################################
+# Node specification
 
-    field = Field.new(@derived_field_name,
-                            :field_type => :default)
-    mapping = FieldMapping.new_created(input_pipe, field)
-    @field_map.add_mapping(mapping)
-    fields = @field_map.mappings.collect { |mapping| mapping.target_field }
+def created_fields
+	fields = FieldSet.new
+    fields << Field.new(@derived_field_name,
+                            :field_type => @derived_field_type)
+	return fields
+end
+
+def fields
+	fields = FieldSet.new
+	fields.add_fields_from_fieldset(all_input_fields)
+	fields.add_fields_from_fieldset(created_fields)
+
+	return fields
 end
 
 end

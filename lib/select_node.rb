@@ -4,12 +4,19 @@ class SelectNode < Node
 
 attr_accessor :condition
 
+################################################################
+# Node specification
+
 def creates_dataset
     return true
 end
 
 def created_fields
-    return @field_map.output_fields
+	return fields
+end
+
+def fields
+	return all_input_fields.clone
 end
 
 def input_limit

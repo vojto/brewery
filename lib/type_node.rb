@@ -1,5 +1,5 @@
 require 'node'
 
-class ProcessingNode < Node
+class FieldOperationNode < Node
 
 end
