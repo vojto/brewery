@@ -39,7 +39,7 @@ def created_fields
 	return fields
 end
 
-def fields
+def update_fields
 	return created_fields
 end
 

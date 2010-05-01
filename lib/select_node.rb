@@ -15,7 +15,7 @@ def created_fields
 	return fields
 end
 
-def fields
+def update_fields
 	return all_input_fields.clone
 end
 

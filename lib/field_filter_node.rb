@@ -16,7 +16,7 @@ def instantiate_fields
 	@input_fields = all_input_fields
 end
 
-def fields
+def update_fields
 	if !@input_fields
 		return nil
 	end

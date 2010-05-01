@@ -3,7 +3,7 @@ require 'record'
 require 'csv'
 
 class FileSourceNode < SourceNode
-attr_accessor :file_fields
+attr_reader :file_fields
 attr_accessor :filename
 attr_accessor :reads_field_names
 attr_accessor :skiped_header_lines_count
@@ -29,9 +29,8 @@ def created_fields
 	return fields
 end
 
-def fields
-	fields = FieldSet.new(@file_fields)
-	return fields	
+def update_fields
+	@fields = FieldSet.new(@file_fields)
 end
 
 
@@ -63,6 +62,8 @@ def read_field_names
     # FIXME: guess types
     
     @reader.close
+	
+	fields_changed
 end
 
 def skip_header_lines
@@ -73,6 +74,10 @@ def skip_header_lines
     end
 end
 
+def file_fields=(fields)
+	@file_fields = fields
+	fields_changed
+end
 
 
 end

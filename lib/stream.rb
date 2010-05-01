@@ -108,12 +108,12 @@ end
 
 ########################################################################
 # Execution
-def execute_node_named(node_name)
+def run_node_named(node_name)
     node = node_with_name(node_name)
-    execute_node(node)
+    run_node(node)
 end
 
-def execute_node(node)
+def run_node(node)
     if not node.kind_of?(TerminalNode)
         raise "Could not execute node of type #{node.class.name}. Only terminal nodes can be executed"
     end
@@ -127,13 +127,17 @@ def execute_node(node)
 
     # FIXME: use execution context
 
+	# prepare node queue
+
     # Prepare model
-    prepare_node(node)
-    prepare_datasets
+    # prepare_node(node)
+    # prepare_datasets
 
     # Execute nodes
-    execute_node_real(node)
+    # execute_node_real(node)
     
+	
+	
     # raise NotImplementedError, "Not implemented"
     
 end

@@ -57,8 +57,8 @@ def created_fields
     return fields
 end
 
-def fields
-	fields = FieldSet.new
+def update_fields
+	@fields = FieldSet.new
 	
 	# Group fields 
 	input_fields = all_input_fields
@@ -72,7 +72,7 @@ def fields
 			field = Field.new(field_name, :storage_type => :unknown,
 									:field_type => :unknown)
 		end
-		fields << field
+		@fields << field
     }
 
 	# Aggregations 
@@ -93,7 +93,7 @@ def fields
 
             field = Field.new(name, :storage_type => :float,
                                     :field_type => :range)
-			fields << field
+			@fields << field
         }
     }
 
@@ -108,10 +108,8 @@ def fields
         
         field = Field.new(name, :storage_type => :integer,
                                 :field_type => :range)
-        fields << field
+        @fields << field
     end
-	
-	return fields
 end
 
 end

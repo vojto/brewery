@@ -23,6 +23,10 @@
 /* Begin PBXFileReference section */
 		F8136625112D4BA000F6BFA1 /* field_set.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field_set.rb; sourceTree = "<group>"; };
 		F81366BF112D658900F6BFA1 /* field_filter.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = field_filter.rb; sourceTree = "<group>"; };
+		F81366F9112D7A7200F6BFA1 /* node_streaming_test.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = node_streaming_test.rb; sourceTree = "<group>"; };
+		F85CADCE112EAA5600578224 /* notes.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = notes.txt; sourceTree = "<group>"; };
+		F85CADD111301F1F00578224 /* customers.csv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = customers.csv; path = data/customers.csv; sourceTree = "<group>"; };
+		F85CADD21130287E00578224 /* donations.csv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = donations.csv; path = data/donations.csv; sourceTree = "<group>"; };
 		F8AC8F79112AAC7C00B67D9A /* aggregate_node.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = aggregate_node.rb; sourceTree = "<group>"; };
 		F8AC8F7A112AAC7C00B67D9A /* brewery.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = brewery.rb; sourceTree = "<group>"; };
 		F8AC8F7B112AAC7C00B67D9A /* class_additions.rb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.ruby; path = class_additions.rb; sourceTree = "<group>"; };
@@ -54,9 +58,19 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		F85CADD011301EFA00578224 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				F85CADD21130287E00578224 /* donations.csv */,
+				F85CADD111301F1F00578224 /* customers.csv */,
+			);
+			name = Data;
+			sourceTree = "<group>";
+		};
 		F8AC8F69112AAC1600B67D9A = {
 			isa = PBXGroup;
 			children = (
+				F85CADCE112EAA5600578224 /* notes.txt */,
 				F8AC8F75112AAC3D00B67D9A /* Tests */,
 				F8AC8F73112AAC1E00B67D9A /* Nodes */,
 				F8AC8F74112AAC3500B67D9A /* Classes */,
@@ -101,6 +115,8 @@
 		F8AC8F75112AAC3D00B67D9A /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				F85CADD011301EFA00578224 /* Data */,
+				F81366F9112D7A7200F6BFA1 /* node_streaming_test.rb */,
 				F8AC8FC4112AB1D100B67D9A /* test_suite.rb */,
 				F8AC8FB2112AAF7C00B67D9A /* node_test.rb */,
 			);

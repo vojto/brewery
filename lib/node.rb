@@ -10,7 +10,6 @@ attr_writer   :label
 attr_reader   :creates_dataset
 attr_accessor :finished
 
-attr_reader   :field_map
 # Stream
 attr_reader   :input_pipes
 attr_reader   :output_pipe
@@ -58,12 +57,16 @@ end
 ################################################################
 # Node specification
 
-def fields
-	raise RuntimeError, "Node subclasses should override method 'fields'"
+def update_fields
+	raise RuntimeError, "Node subclasses should override method 'rebuild_fields'"
 end
 
 def created_fields
 	return nil
+end
+
+def fields
+	return @fields
 end
 
 def is_terminal
@@ -85,6 +88,10 @@ end
 # Notifications
 
 def fields_changed
+	update_fields
+	if !@fields
+		raise RuntimeError, "Subclasses should create fields in update_fields"
+	end
 	# do nothing by default
 end
 
@@ -215,6 +222,57 @@ def setup_output_pipe_table
     # FIXME: notify that pipe has changed (or not, as this is called for all nodes before execution)
 end
 
+def setup_node_stream(node)
+    # should be called only when node is validated
+    # required inputs:
+    #    created_fields
+    #    input object (one and only one, if does not create dataset)
+    #    fields
+    #    input 
+	
+	if node.input_pipes.count > 1 and not node.creates_dataset
+        raise RuntimeError, "Nodes with more inputs should create datasets"
+    end
+
+	input_pipe =node.input_pipe
+	output_pipe = node.output_pipe
+
+	if not output
+		# nothing to set-up
+		return
+	end
+    
+	# FIXME: make sure that fields are up-to-date
+    output_pipe.fields = node.fields
+
+    if self.creates_dataset
+        table = DatastoreTable.new
+	else
+        table = input_pipe.table
+
+        # Remap column map
+        input_fields = node.all_input_fields
+    
+        input_fields.each { |input_field|
+            output_field = node.field_for_input_field(input_field)
+            if output_field
+                output_map[output_field] = input_map[input_field]
+                # ignore deleted fields
+            end
+        }
+    end    
+    
+    # Add created column map
+    created_fields = self.created_fields
+    columns = table.create_columns_for_fields(created_fields)
+
+    for i in 0..created_fields.count - 1
+        output_map[created_fields[i]] = columns[i]
+    end
+    @output_pipe.table = table
+    # FIXME: notify that pipe has changed (or not, as this is called for all nodes before execution)
+end
+
 def input_pipe_added(pipe)
     # do nothing
 end
@@ -223,6 +281,7 @@ def input_pipe_removed(pipe)
     # do nothing
 end
 def input_pipes_changed
+	update_fields
     # do nothing
 end
 

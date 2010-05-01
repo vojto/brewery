@@ -5,6 +5,7 @@ class FileOutputNode < Node
 attr_accessor :filename
 attr_accessor :mode # :append, :overwrite
 attr_accessor :include_field_names
+attr_accessor :field_separator
 
 def execute
     # requre: filename
