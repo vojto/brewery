@@ -1,0 +1,231 @@
+#! /usr/bin/ruby
+#
+# Script for running ETL
+#
+# For more info use: ruby etl.rb --help
+#
+# Copyright:: (C) 2009 Knowerce, s.r.o.
+# 
+# Author:: Stefan Urbanek
+# Date:: Oct 2009
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+require 'rubygems'
+require 'brewery'
+require 'optparse'
+
+module Brewery
+
+class ETLTool
+
+def initialize
+    @options = {}
+
+    OptionParser.new do |opts|
+        opts.banner = "Usage: etl [options] <command> [command-args]"
+        
+        opts.on("-c", "--config CONFIG", "Specify a configuration file.") do |config|
+            @options[:config] = config
+        end
+        opts.on("-d", "--debug", "Enable debugging") do
+            @debug = true
+        end
+        opts.on("-F", "--force", "Try to force command") do
+            @force = true
+        end
+        opts.separator "\n"
+        opts.separator "Commands:"
+        opts.separator "    list-jobs       - list available jobs"
+        opts.separator "    list-connectios - list available connections"
+        opts.separator "    run <job>       - specified job"
+        opts.separator "    run-scheduled   - run all scheduled jobs and jobs forced to be run"
+        opts.separator "    list-schedule   - display job schedule"
+        opts.separator "    initialize      - initialize ETL schema"
+    end.parse!
+
+	@command = ARGV[0]
+	ARGV.delete_at(0)
+	@args = ARGV
+
+    if @options[:config].nil?
+        config_file = Pathname.new("config.yml")
+    else
+        config_file = Pathname.new(@options[:config])
+    end
+
+    if not config_file.exist?
+        raise "Configuration file '#{config_file}' does not exist"
+    end
+    @configuration = YAML.load_file(config_file)
+    
+    load_configuration
+end
+
+def load_configuration
+    # Logging
+    if @configuration["log_file"]
+        @log_file = @configuration["log_file"]
+    else
+        @log_file = STDERR
+    end
+    
+    # Job Search Path
+    path = @configuration["job_search_path"]
+	if path.is_kind_of_class(String)
+		ETLJobBundle.job_search_path = [path]
+	elsif path.is_kind_of_class(Array)
+		ETLJobBundle.job_search_path = path
+	elsif path
+		puts 'Unknown job search path type (should be string or array)'
+	end
+
+	# Connection Search Path
+    path = @configuration["repository_search_path"]
+	if path.is_kind_of_class(String)
+		RepositoryManager.default_manager.search_path = [path]
+	elsif path.is_kind_of_class(Array)
+		RepositoryManager.default_manager.search_path = path
+	elsif path
+		puts 'Unknown connection search path type (should be string or array)'
+	end
+
+	# Connection
+	@connection_info = @configuration["connection"]
+end
+
+def create_etl_manager
+	
+    @etl_manager = ETLManager.new(@connection_info)
+    if @debug
+        @etl_manager.debug = true
+    end
+
+    begin
+        @etl_manager.log_file = @log_file
+
+        if @configuration["job_search_path"]
+            ETLJobBundle.job_search_path = @configuration["job_search_path"]
+        else
+            ETLJobBundle.job_search_path = [Pathname.new(__FILE__).dirname + "jobs"]
+        end
+        
+        if @configuration["etl_files_path"]
+            @etl_manager.etl_files_path = @configuration["etl_files_path"]
+        end
+        
+    rescue => exception
+        @etl_manager.log.error "#{exception.message}"
+        @etl_manager.log.error exception.backtrace.join("\n")
+    end
+end
+   
+def run_scheduled_jobs
+    begin
+        @etl_manager.run_scheduled_jobs
+    rescue => exception
+        @etl_manager.log.error "#{exception.message}"
+        @etl_manager.log.error exception.backtrace.join("\n")
+    end
+end
+
+def run_named_job
+	if @args.count == 0
+		raise RuntimeError, "No job name given"
+		return
+	else
+		job_name = @args[0]
+	end
+
+	if @args.count > 1
+		argument = @args[1]
+	else
+		argument = nil
+	end
+	
+    begin
+	    @etl_manager.run_named_job(job_name, argument)
+    rescue => exception
+        @etl_manager.log.error "#{exception.message}"
+        @etl_manager.log.error exception.backtrace.join("\n")
+    end
+end
+
+def list_available_jobs
+	jobs = JobBundle.available_jobs
+	jobs.each { |job|
+		puts job
+	}
+end
+
+def list_available_connections
+	list = ConnectionManager.default_manager.available_connections
+	list.each { |connection|
+		puts connection
+	}
+end
+
+def show_schedule
+	schedules = @etl_manager.all_schedules
+
+	puts "ID\tname\torder\tschedule\tenabled"	
+	schedules.each { |schedule|
+		puts "#{schedule[:id]}\t#{schedule[:name]}\t#{schedule[:order]}\t#{schedule[:schedule]}\t#{schedule[:is_enabled]}"
+	}
+end
+
+def initialize_etl_schema
+	options = { :force => @force }
+	@etl_manager.create_etl_manager_structures(options)
+end
+
+def run
+	create_etl_manager
+	
+	if @command
+		@command = @command.downcase
+	end
+
+	case @command
+	when "list-jobs" then
+		list_available_jobs
+	when "list-connections" then
+		list_available_connections
+	when "initialize" then
+		initialize_etl_schema
+	when "run" then
+		run_named_job
+	when "run-scheduled" then
+		run_scheduled_jobs
+	when "list-schedule" then
+		show_schedule
+	else 
+		puts "Unknown command #{@command}"
+	end
+#    create_etl_manager
+#    @etl_manager.log.info "ETL start"
+#    if not @jobs.empty?
+#        run_jobs(@jobs)
+#    else
+#        run_scheduled_jobs
+#    end
+#    @etl_manager.log.info "ETL finished"
+end
+
+end
+
+end # module
+
+tool = Brewery::ETLTool.new
+tool.run

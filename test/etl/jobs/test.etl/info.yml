@@ -1,0 +1,4 @@
+full_name: Test Job
+description: This description of test job
+type: ruby
+job_class: TestJob
