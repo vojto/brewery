@@ -30,12 +30,12 @@ def download_failed(downloader, exception)
     puts exception.backtrace.join("\n")
 end
 
-def download_request_processing_failed(downloader, exception, request)
+def download_response_processing_failed(downloader, exception, response)
     puts "ERROR: Processing failed: #{exception.message}"
     puts exception.backtrace.join("\n")
 end
 
-def download_process_request(downloader, request)
+def download_process_response(downloader, response)
     # do nothing by default
 end
 
@@ -100,7 +100,7 @@ end
 def processing_thread_core
 	# puts "==> PROCESSING THREAD STARTED"
     loop do
-        request = nil
+        response = nil
         # puts "--> SYNC"
         @mutex.synchronize do
             break if @download_finished and @processing_queue.empty?
@@ -108,16 +108,16 @@ def processing_thread_core
             @lock.wait_while { @processing_queue.empty? && (! @download_finished) }
 
             if not @processing_queue.empty?
-                request = @processing_queue.shift
+                response = @processing_queue.shift
             end
         end
-        break unless request
+        break unless response
 
         begin
         	# puts "==> PROCESS REQUEST #{request[:url]}"
-			@delegate.downloader_process(self, request)
+			@delegate.downloader_process(self, response)
 		rescue => exception
-			@delegate.download_request_processing_failed(self, exception, request)
+			@delegate.download_response_processing_failed(self, exception, response)
 	    end
 
     end
@@ -125,9 +125,9 @@ def processing_thread_core
 end
 
 def process_download(url_info, path, response)
-	# file = File.new(path, "wb")
-	# file.puts response.body
-	# file.close
+	file = File.new(path, "wb")
+	file.puts response.body
+	file.close
 
 	hash = {
 		:url => url_info[:url],
@@ -135,7 +135,7 @@ def process_download(url_info, path, response)
 		:status_code => response.code,
 		:user_info => url_info[:user_info]
 	}
-
+	# puts "ADDING TO QUEUE #{url_info[:url]}"
 	@mutex.synchronize do
 		 @processing_queue << hash
 		 @lock.broadcast

@@ -20,9 +20,18 @@
 
 require 'monitor'
 require 'pathname'
-require 'curb'
-require 'etl/download_batch'
-require 'typhoeus'
+
+begin
+	require 'curb'
+rescue
+	# no curb
+end
+
+begin
+	require 'typhoeus'
+rescue
+	# no typhoeus
+end
 
 module Brewery
 
