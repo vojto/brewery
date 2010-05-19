@@ -211,7 +211,7 @@ def run
 	when "list-schedule" then
 		show_schedule
 	else 
-		puts "Unknown command #{@command}"
+		puts "Unknown command #{@command}. Try --help"
 	end
 #    create_etl_manager
 #    @etl_manager.log.info "ETL start"
