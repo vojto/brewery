@@ -23,6 +23,7 @@ require 'rubygems'
 require 'brewery/core/repository_manager'
 require 'brewery/core/class_additions'
 require 'brewery/core/string_additions'
+require 'brewery/core/hierarchy_tree'
 
 require 'brewery/core/downloader'
 require 'brewery/core/download_batch'
