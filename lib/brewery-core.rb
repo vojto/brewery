@@ -19,22 +19,4 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-require 'rubygems'
-require 'brewery/core/repository_manager'
-require 'brewery/core/class_additions'
-require 'brewery/core/string_additions'
-require 'brewery/core/hierarchy_tree'
-
-require 'brewery/core/downloader'
-require 'brewery/core/download_batch'
-require 'brewery/core/download_manager'
-
-module Brewery
-
-# Get default repository manager. Short-cut for [Brewery::RepositoryManager.default_manager]
-def self.repository_manager
-	return RepositoryManager.default_manager
-end
-
-end # module
 

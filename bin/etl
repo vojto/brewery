@@ -37,7 +37,7 @@ def initialize
         opts.banner = "Usage: etl [options] <command> [command-args]"
         
         opts.on("-c", "--config CONFIG", "Specify a configuration file.") do |config|
-            @options[:config] = config
+            @config_file = Pathname.new(config)
         end
         opts.on("-d", "--debug", "Enable debugging") do
             @debug = true
@@ -47,7 +47,7 @@ def initialize
         end
         opts.separator "\n"
         opts.separator "Commands:"
-        opts.separator "    list-jobs       - list available jobs"
+#        opts.separator "    list-jobs       - list available jobs"
         opts.separator "    list-connectios - list available connections"
         opts.separator "    run <job>       - specified job"
         opts.separator "    run-scheduled   - run all scheduled jobs and jobs forced to be run"
@@ -59,75 +59,32 @@ def initialize
 	ARGV.delete_at(0)
 	@args = ARGV
 
-    if @options[:config].nil?
-        config_file = Pathname.new("config.yml")
-    else
-        config_file = Pathname.new(@options[:config])
-    end
-
-    if not config_file.exist?
+    if @config_file && ! @config_file.exist?
         raise "Configuration file '#{config_file}' does not exist"
     end
-    @configuration = YAML.load_file(config_file)
     
     load_configuration
 end
 
 def load_configuration
-    # Logging
-    if @configuration["log_file"]
-        @log_file = @configuration["log_file"]
-    else
-        @log_file = STDERR
-    end
-    
-    # Job Search Path
-    path = @configuration["job_search_path"]
-	if path.is_kind_of_class(String)
-		ETLJobBundle.job_search_path = [path]
-	elsif path.is_kind_of_class(Array)
-		ETLJobBundle.job_search_path = path
-	elsif path
-		puts 'Unknown job search path type (should be string or array)'
+	if @config_file
+		Brewery::load_configuration_from_file(@config_file)
+	else
+		Brewery::load_default_configuration
+	end
+	
+	@configuration = Brewery::configuration
+	if !@configuration
+		raise "Brewery environment is not configured"
 	end
 
-	# Connection Search Path
-    path = @configuration["repository_search_path"]
-	if path.is_kind_of_class(String)
-		RepositoryManager.default_manager.search_path = [path]
-	elsif path.is_kind_of_class(Array)
-		RepositoryManager.default_manager.search_path = path
-	elsif path
-		puts 'Unknown connection search path type (should be string or array)'
-	end
-
-	# Connection
 	@connection_info = @configuration["connection"]
 end
 
 def create_etl_manager
-	
     @etl_manager = ETLManager.new(@connection_info)
     if @debug
         @etl_manager.debug = true
-    end
-
-    begin
-        @etl_manager.log_file = @log_file
-
-        if @configuration["job_search_path"]
-            ETLJobBundle.job_search_path = @configuration["job_search_path"]
-        else
-            ETLJobBundle.job_search_path = [Pathname.new(__FILE__).dirname + "jobs"]
-        end
-        
-        if @configuration["etl_files_path"]
-            @etl_manager.etl_files_path = @configuration["etl_files_path"]
-        end
-        
-    rescue => exception
-        @etl_manager.log.error "#{exception.message}"
-        @etl_manager.log.error exception.backtrace.join("\n")
     end
 end
    

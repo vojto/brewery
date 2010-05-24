@@ -47,7 +47,7 @@ cattr_reader :system_table_names
 def initialize(connection)
 	DataMapper.setup(:default, connection)
 	@job_search_path = Array.new
-    self.log_file = STDERR
+    @log = Brewery::logger
 
 	# check_etl_schema
 end

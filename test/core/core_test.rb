@@ -54,4 +54,10 @@ def test_tree
 	}
 	assert_equal(12, count)
 end
+
+def test_config
+	Brewery::load_default_configuration
+	assert_equal(1,1)
+end
+
 end
