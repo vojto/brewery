@@ -41,6 +41,8 @@ require 'brewery/etl/etl_job'
 require 'brewery/etl/etl_manager'
 require 'brewery/etl/etl_defaults'
 
+# Quality
+require 'brewery/quality/quality_auditor'
 
 # require 'brewery-streams'
 

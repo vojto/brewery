@@ -1,0 +1,135 @@
+#! /usr/bin/ruby
+#
+# Brewery Data Auditor
+#
+# For more info use: dataaudit --help
+#
+# Copyright:: (C) 2010 Knowerce, s.r.o.
+# 
+# Author:: Stefan Urbanek
+# Date:: May 2010
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+require 'rubygems'
+require 'brewery'
+require 'optparse'
+
+module Brewery
+
+class DataAuditorTool
+
+def initialize
+    @options = {}
+
+    OptionParser.new do |opts|
+        opts.banner = "Usage: dataauditor [options] <repository> <table> [fields]"
+        
+        opts.on("-c", "--config CONFIG", "Specify a configuration file.") do |config|
+            @config_file = Pathname.new(config)
+        end
+        opts.on("-d", "--debug", "Enable debugging") do
+            @debug = true
+        end
+    end.parse!
+
+	@args = ARGV
+
+    if @config_file && ! @config_file.exist?
+        raise "Configuration file '#{config_file}' does not exist"
+    end
+    
+    load_configuration
+end
+
+def load_configuration
+	if @config_file
+		Brewery::load_configuration_from_file(@config_file)
+	else
+		Brewery::load_default_configuration
+	end
+	
+	@configuration = Brewery::configuration
+	if !@configuration
+		raise "Brewery environment is not configured"
+	end
+
+	@connection_info = @configuration["connection"]
+end
+
+def run
+    @auditor = Brewery::TableDataQualityAuditor.new
+
+	if @args.count == 0
+		raise RuntimeError, "No repository given"
+		return
+	else
+		repo_name = @args[0]
+	end
+
+	if @args.count == 1
+		raise RuntimeError, "No table name given #{@args}"
+		return
+	else
+		table_name = @args[1]
+	end
+
+	@args.delete_at(0)
+	@args.delete_at(0)
+
+	@fields = nil
+	if @args.count > 0
+		@fields = Array.new
+		@args.each { |arg|
+			@fields << arg
+		}
+	end
+	
+	# Set-up auditor
+	connection = Brewery::repository_manager.create_connection(repo_name)
+	if !connection
+		raise RuntimeError, "Unable to create connection #{repo_name}"
+	end
+	
+	@auditor.connection = connection
+	@auditor.table_name = table_name.to_sym
+	
+	if @fields
+		@results = @auditor.audit_fields(@fields)
+	else
+		@results = @auditor.audit_all_fields
+	end
+	
+	# Print result
+	tests = @auditor.audit_tests
+	
+	@results.each { | result |
+		puts "#{result[:field]}:"
+		tests.each { |test|
+			value = result[test]
+			if !value
+				next
+			end
+			puts "    #{test}: #{value}"
+		}
+	}
+	
+end
+
+end # class
+
+end # module
+
+tool = Brewery::DataAuditorTool.new
+tool.run
