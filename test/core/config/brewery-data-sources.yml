@@ -1,0 +1,3 @@
+my_project:
+  adapter: postgres
+  database: my_project

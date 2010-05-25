@@ -55,6 +55,35 @@ def test_tree
 	assert_equal(12, count)
 end
 
+def test_data_sources
+	manager = Brewery::data_source_manager
+	manager2 = Brewery::DataSourceManager::default_manager
+	
+	assert_equal(manager, manager2)
+	
+	src = manager.source(:default)
+	assert_equal(nil, src)
+	manager.add_source( :default, { :adapter => :sqlite3 } )
+	
+	src = manager.source(:default)
+	assert_not_nil(src)
+	
+	manager.add_sources_in_file('data_sources1.yml')
+	src = manager.source(:shop)
+	assert_not_nil(src)
+
+	src = manager.source("shop")
+	assert_not_nil(src)
+
+	manager.add_source( :shop, { :adapter => :sqlite3 } )
+	src = manager.source("shop")
+	assert_equal(:sqlite3, src[:adapter])
+	
+	src = manager.source(:my_project)
+	assert_not_nil(src)
+	
+end
+
 def test_config
 	Brewery::load_default_configuration
 	assert_equal(1,1)

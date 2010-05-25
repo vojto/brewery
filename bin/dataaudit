@@ -36,7 +36,7 @@ def initialize
     @options = {}
 
     OptionParser.new do |opts|
-        opts.banner = "Usage: dataauditor [options] <repository> <table> [fields]"
+        opts.banner = "Usage: dataauditor [options] <data_source> <table> [fields]"
         
         opts.on("-c", "--config CONFIG", "Specify a configuration file.") do |config|
             @config_file = Pathname.new(config)
@@ -80,7 +80,7 @@ def run
 		raise RuntimeError, "No repository given"
 		return
 	else
-		repo_name = @args[0]
+		src_name = @args[0]
 	end
 
 	if @args.count == 1
@@ -102,9 +102,9 @@ def run
 	end
 	
 	# Set-up auditor
-	connection = Brewery::repository_manager.create_connection(repo_name)
+	connection = Brewery::data_source_manager.create_connection(src_name)
 	if !connection
-		raise RuntimeError, "Unable to create connection #{repo_name}"
+		raise RuntimeError, "Unable to create connection #{src_name}"
 	end
 	
 	@auditor.connection = connection

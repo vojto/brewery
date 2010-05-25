@@ -33,7 +33,7 @@ require 'brewery/core/download_manager'
 require 'sequel'
 require 'dm-core'
 
-require 'brewery/core/repository_manager'
+require 'brewery/core/data_source_manager'
 require 'brewery/core/class_additions'
 
 require 'brewery/etl/etl_job_bundle'
@@ -50,17 +50,17 @@ module Brewery
 
 @@default_configuration_files = [
 					'./config/brewery.yml',
-					'~/.brewery.yml',
-					'/etc/brewery.yml'
+					'~/.brewery/config.yml',
+					'/etc/brewery/config.yml'
 				]
 @@configuration = nil
 @@logger = nil
 @@debug = false
 
 
-# Get default repository manager. Short-cut for [Brewery::RepositoryManager.default_manager]
-def self.repository_manager
-	return RepositoryManager.default_manager
+# Get default data source manager. Short-cut for [Brewery::DataSourceManager.default_manager]
+def self.data_source_manager
+	return DataSourceManager::default_manager
 end
 
 # Load default brewery configuration from files in the following order:
@@ -111,14 +111,14 @@ def self.configure_from_hash(config)
 	end
 
 	# FIXME: change to repository files instead of dirs with files
-    path = config["repository_search_path"]
-	if path.is_kind_of_class(String)
-		RepositoryManager.default_manager.search_path = [path]
-	elsif path.is_kind_of_class(Array)
-		RepositoryManager.default_manager.search_path = path
-	elsif path
+    files = config["data_source_files"]
+	if files.is_kind_of_class(Array)
+		files.each { |file|
+			DataSourceManager.default_manager.add_sources_in_file(file)
+		}
+	else
 		# FIXME: use log
-		puts 'Unknown connection search path type (should be string or array)'
+		puts 'Unknown data_source_files value type (should be array)'
 	end
 	
 	@@configuration = config
