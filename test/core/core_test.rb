@@ -56,31 +56,31 @@ def test_tree
 end
 
 def test_data_sources
-	manager = Brewery::data_source_manager
-	manager2 = Brewery::DataSourceManager::default_manager
+	manager = Brewery::data_store_manager
+	manager2 = Brewery::DataStoreManager::default_manager
 	
 	assert_equal(manager, manager2)
 	
-	src = manager.source(:default)
-	assert_equal(nil, src)
-	manager.add_source( :default, { :adapter => :sqlite3 } )
+	store = manager.data_store(:default)
+	assert_equal(nil, store)
+	manager.add_data_store( :default, { :adapter => :sqlite3 } )
 	
-	src = manager.source(:default)
-	assert_not_nil(src)
+	store = manager.data_store(:default)
+	assert_not_nil(store)
 	
-	manager.add_sources_in_file('data_sources1.yml')
-	src = manager.source(:shop)
-	assert_not_nil(src)
+	manager.add_stores_in_file('data_sources1.yml')
+	store = manager.data_store(:shop)
+	assert_not_nil(store)
 
-	src = manager.source("shop")
-	assert_not_nil(src)
+	store = manager.data_store("shop")
+	assert_not_nil(store)
 
-	manager.add_source( :shop, { :adapter => :sqlite3 } )
-	src = manager.source("shop")
-	assert_equal(:sqlite3, src[:adapter])
+	manager.add_data_store( :shop, { :adapter => :sqlite3 } )
+	store = manager.data_store("shop")
+	assert_equal(:sqlite3, store[:adapter])
 	
-	src = manager.source(:my_project)
-	assert_not_nil(src)
+	store = manager.data_store(:my_project)
+	assert_not_nil(store)
 	
 end
 

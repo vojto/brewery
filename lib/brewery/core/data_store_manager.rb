@@ -1,4 +1,4 @@
-# Data Source Manager
+# Data Store Manager
 #
 # Copyright:: (C) 2010 Stefan Urbanek
 # 
@@ -22,43 +22,43 @@
 
 module Brewery
 
-class DataSourceManager
+class DataStoreManager
 
 @@default_manager = nil
 @@default_files = [
-					'/etc/brewery/data-sources.yml',
-					'~/.brewery/data-sources.yml',
-					'./config/brewery-data-sources.yml'
+					'/etc/brewery/data-stores.yml',
+					'~/.brewery/data-stores.yml',
+					'./config/brewery-data-stores.yml'
 				]
 
 def self.default_manager
 	if !@@default_manager
 		@@default_manager = self.new
-		@@default_manager.add_sources_in_default_files
+		@@default_manager.add_stores_in_default_files
 	end
 	return @@default_manager
 end
 
 def initialize
-	@data_sources = Hash.new
-	@file_data_sources = Hash.new
+	@data_stores = Hash.new
+	@file_data_stores = Hash.new
 	@files = Array.new
 	
 	@connections = Hash.new
 	@watched_files = Array.new
 end
 
-def add_sources_in_default_files
+def add_stores_in_default_files
 	for file in @@default_files
 		path = Pathname.new(file).expand_path
 		if path.exist? and path.file?
-			add_sources_in_file(file)
+			add_stores_in_file(file)
 		end
 	end
 
 end
 
-def add_sources_in_file(path)
+def add_stores_in_file(path)
 	hash = YAML.load_file(path)
 	
 	symbolised_hash = Hash.new
@@ -66,55 +66,55 @@ def add_sources_in_file(path)
 		symbolised_hash[key.to_sym] = hash[key]
 	}
 	
-	@file_data_sources[path] = symbolised_hash
+	@file_data_stores[path] = symbolised_hash
 	
 	if not @files.include?(path)
 		@files << path
 	end
 end
 
-def remove_sources_in_file(path)
-	@file_data_sources.delete(path)
+def remove_stores_in_file(path)
+	@file_data_stores.delete(path)
 	@files.delete(path)
 end
 
-def add_sources_from_hash(hash)
+def add_stores_from_hash(hash)
 	# Do not use merge, we need to convert keys to symbols
 	hash.keys.each { |key|
-		add_source(key, hash[key])
+		add_store(key, hash[key])
 	}
 end
 
-def add_source(name, description)
-	@data_sources[name.to_sym] = description
+def add_data_store(name, description)
+	@data_stores[name.to_sym] = description
 end
 
-def source(name)
+def data_store(name)
 	name = name.to_sym
 
-	src = @data_sources[name]
+	store = @data_stores[name]
 
-	if src
-		return src
+	if store
+		return store
 	end
 
 	@files.each { |file|
-		file_sources = @file_data_sources[file]
-		src = file_sources[name]
+		file_stores = @file_data_stores[file]
+		store = file_stores[name]
 
-		if src
+		if store
 			break
 		end
 	}
 
-	return src
+	return store
 end
 
-def create_connection(src_name, identifier = nil)
+def create_connection(store_name, identifier = nil)
 	# FIXME: rename to create_named_connection
-	src = source(src_name)
-	if src
-		connection = Sequel.connect(src)
+	store = data_store(store_name)
+	if store
+		connection = Sequel.connect(store)
 		
 		if identifier
 			add_named_connection(connection, identifier)

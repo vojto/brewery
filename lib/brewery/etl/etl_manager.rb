@@ -45,10 +45,13 @@ cattr_reader :system_table_names
 					   @@job_status_table_name ]
 
 def initialize(connection)
+	# FIXME: use brewery_etl
 	DataMapper.setup(:default, connection)
+
 	@job_search_path = Array.new
     @log = Brewery::logger
-
+	# FIXME: document this
+	@etl_files_path = Pathname.new("/tmp/brewery-etl-files")
 	# check_etl_schema
 end
 

@@ -33,7 +33,7 @@ require 'brewery/core/download_manager'
 require 'sequel'
 require 'dm-core'
 
-require 'brewery/core/data_source_manager'
+require 'brewery/core/data_store_manager'
 require 'brewery/core/class_additions'
 
 require 'brewery/etl/etl_job_bundle'
@@ -58,9 +58,9 @@ module Brewery
 @@debug = false
 
 
-# Get default data source manager. Short-cut for [Brewery::DataSourceManager.default_manager]
-def self.data_source_manager
-	return DataSourceManager::default_manager
+# Get default data store manager. Short-cut for [Brewery::DataStoreManager.default_manager]
+def self.data_store_manager
+	return DataStoreManager::default_manager
 end
 
 # Load default brewery configuration from files in the following order:
@@ -111,14 +111,14 @@ def self.configure_from_hash(config)
 	end
 
 	# FIXME: change to repository files instead of dirs with files
-    files = config["data_source_files"]
+    files = config["data_store_files"]
 	if files.is_kind_of_class(Array)
 		files.each { |file|
-			DataSourceManager.default_manager.add_sources_in_file(file)
+			DataSourceManager.default_manager.add_stores_in_file(file)
 		}
-	else
+	elsif files
 		# FIXME: use log
-		puts 'Unknown data_source_files value type (should be array)'
+		puts 'Unknown data_store_files value type (should be array)'
 	end
 	
 	@@configuration = config

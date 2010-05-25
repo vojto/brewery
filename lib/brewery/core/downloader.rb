@@ -152,7 +152,7 @@ def download_hydra
 
 	@requests.each { |request_info|
 		url = request_info[:url]
-		filename = request_info[:filename]
+		filename = request_info[:file]
 
 		if !filename || filename == ""
 			filename = url.split(/\?/).first.split(/\//).last

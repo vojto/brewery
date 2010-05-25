@@ -1,16 +1,9 @@
 ###########################################################
 # Paths
 
-job_search_path: /Users/stefan/Developer/Projects/vvo-etl
-connection_search_path: /Users/stefan/Developer/Projects/vvo-etl/connections
-etl_files_path: /Users/stefan/Developer/Projects/vvo-etl/files
+job_search_path: .
+# data_store_files: 
+etl_files_path: .
 
 ###########################################################
 # Database Connection
-
-connection:
-  adapter: postgres
-  host: localhost
-  username: stefan
-  database: etl
-  charset: UTF-8
