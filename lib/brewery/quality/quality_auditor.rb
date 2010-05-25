@@ -147,6 +147,14 @@ def audit_field(field)
 			record[:empty_percent] = record[:empty_count] / count * 100.0
 		end
 	end
+	
+	# convert from big decimal to something more useable
+	# FIXME: is this kosher?
+	if type == :numeric
+		for f in [ :value_min, :value_max, :value_avg, :value_sum ]
+			record[f] = record[f].to_f
+		end
+	end
 
 	return record
 end

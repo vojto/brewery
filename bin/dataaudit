@@ -25,6 +25,8 @@
 require 'rubygems'
 require 'brewery'
 require 'optparse'
+require 'yaml'
+require 'csv'
 
 module Brewery
 
@@ -38,6 +40,9 @@ def initialize
         
         opts.on("-c", "--config CONFIG", "Specify a configuration file.") do |config|
             @config_file = Pathname.new(config)
+        end
+        opts.on("--format FORMAT", "Specify output format: text, yaml, csv") do |format|
+            @format = format.to_sym
         end
         opts.on("-d", "--debug", "Enable debugging") do
             @debug = true
@@ -111,6 +116,22 @@ def run
 		@results = @auditor.audit_all_fields
 	end
 	
+	dump_results
+end
+
+def dump_results
+	if @format == :yaml
+		dump_as_yaml
+	elsif @format == :csv
+		dump_as_csv
+	else
+		dump_as_text
+	end
+end
+	
+def dump_as_text
+	puts "ASTEXT"
+exit
 	# Print result
 	tests = @auditor.audit_tests
 	
@@ -124,8 +145,30 @@ def run
 			puts "    #{test}: #{value}"
 		}
 	}
-	
 end
+
+def dump_as_yaml
+	puts @results.to_yaml
+end
+
+def dump_as_csv
+	writer = CSV::Writer.create(STDOUT)
+	
+	tests = @auditor.audit_tests
+	header = [ "field" ].concat(tests)
+	writer << header
+
+	@results.each { | result |
+		row = Array.new
+		row << result[:field]
+		tests.each { |test|
+			value = result[test]
+			row << value
+		}
+		writer << row
+	}
+end
+
 
 end # class
 
