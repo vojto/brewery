@@ -130,8 +130,6 @@ def dump_results
 end
 	
 def dump_as_text
-	puts "ASTEXT"
-exit
 	# Print result
 	tests = @auditor.audit_tests
 	
