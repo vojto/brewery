@@ -118,6 +118,8 @@ def audit_field(field)
 	
 	string_selection = {
 		"SUM(CASE WHEN #{field} = '' THEN 1 ELSE 0 END)".lit => :empty_count,
+		"MIN(LENGTH(#{field}))".lit => :value_min,
+		"MAX(LENGTH(#{field}))".lit => :value_max
 	}
 	
 	numeric_selection = {
