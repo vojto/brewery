@@ -51,7 +51,15 @@ def initialize(connection)
 	@job_search_path = Array.new
     @log = Brewery::logger
 	# FIXME: document this
-	@etl_files_path = Pathname.new("/tmp/brewery-etl-files")
+	if Brewery.configuration
+		path = Brewery.configuration["etl_files_path"]
+		if path
+			@etl_files_path = Pathname.new(path)
+		else
+			@etl_files_path = Pathname.new("/tmp/brewery-etl-files")
+		end
+	end
+	
 	# check_etl_schema
 end
 

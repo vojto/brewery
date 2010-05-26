@@ -24,6 +24,7 @@ require 'brewery/core/repository_manager'
 require 'brewery/core/class_additions'
 require 'brewery/core/string_additions'
 require 'brewery/core/hierarchy_tree'
+require 'brewery/core/dataset'
 
 require 'brewery/core/downloader'
 require 'brewery/core/download_batch'
@@ -110,7 +111,6 @@ def self.configure_from_hash(config)
 		puts 'Unknown job search path type (should be string or array)'
 	end
 
-	# FIXME: change to repository files instead of dirs with files
     files = config["data_store_files"]
 	if files.is_kind_of_class(Array)
 		files.each { |file|
@@ -120,7 +120,7 @@ def self.configure_from_hash(config)
 		# FIXME: use log
 		puts 'Unknown data_store_files value type (should be array)'
 	end
-	
+
 	@@configuration = config
 end
 
