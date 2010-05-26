@@ -166,6 +166,11 @@ def job_class
     return job_class
 end
 
+def path_for_file(file)
+	return @path + file
+end
+
+
 end # class
 
 end # module

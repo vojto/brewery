@@ -31,6 +31,8 @@ attr_reader :files_directory
 attr_reader :name
 attr_reader :config
 attr_reader :defaults_domain
+attr_reader :bundle
+
 attr_accessor :job_status
 attr_accessor :defaults
 
