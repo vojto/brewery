@@ -120,7 +120,7 @@ def run_named_job
 end
 
 def list_available_jobs
-	jobs = JobBundle.available_jobs
+	jobs = ETLJobBundle.available_jobs
 	jobs.each { |job|
 		puts job
 	}
