@@ -110,6 +110,18 @@ def data_store(name)
 	return store
 end
 
+def available_data_stores
+	stores = Array.new
+	stores << @data_stores.keys
+
+	@files.each { |file|
+		file_stores = @file_data_stores[file]
+		stores << file_stores.keys
+	}
+
+	return stores.uniq
+end
+
 def create_connection(store_name, identifier = nil)
 	# FIXME: rename to create_named_connection
 	store = data_store(store_name)

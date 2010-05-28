@@ -47,10 +47,10 @@ def initialize
         end
         opts.separator "\n"
         opts.separator "Commands:"
-#        opts.separator "    list-jobs       - list available jobs"
-        opts.separator "    list-connectios - list available connections"
         opts.separator "    run <job>       - specified job"
         opts.separator "    run-scheduled   - run all scheduled jobs and jobs forced to be run"
+        opts.separator "    list-jobs       - list available jobs"
+        opts.separator "    list-datastores - list available data stores"
         opts.separator "    list-schedule   - display job schedule"
         opts.separator "    initialize      - initialize ETL schema"
     end.parse!
@@ -126,10 +126,10 @@ def list_available_jobs
 	}
 end
 
-def list_available_connections
-	list = ConnectionManager.default_manager.available_connections
-	list.each { |connection|
-		puts connection
+def list_datastores
+	list = DataStoreManager.default_manager.available_data_stores
+	list.each { |ds|
+		puts ds
 	}
 end
 
@@ -157,8 +157,8 @@ def run
 	case @command
 	when "list-jobs" then
 		list_available_jobs
-	when "list-connections" then
-		list_available_connections
+	when "list-datastores" then
+		list_datastores
 	when "initialize" then
 		initialize_etl_schema
 	when "run" then
