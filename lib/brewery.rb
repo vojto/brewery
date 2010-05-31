@@ -45,6 +45,10 @@ require 'brewery/etl/etl_defaults'
 # Quality
 require 'brewery/quality/quality_auditor'
 
+# Cubes
+require 'brewery/cubes/cube.rb'
+require 'brewery/cubes/dimension.rb'
+
 # require 'brewery-streams'
 
 module Brewery
