@@ -81,7 +81,7 @@ end
 def add_stores_from_hash(hash)
 	# Do not use merge, we need to convert keys to symbols
 	hash.keys.each { |key|
-		add_store(key, hash[key])
+		add_data_store(key, hash[key])
 	}
 end
 
