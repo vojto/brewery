@@ -1,6 +1,9 @@
 module Brewery
 
-# Object representing a dataset. Currently used only for dataset metadata, such as fields and field types.
+# Object representing a dataset. Currently used only for dataset metadata, 
+# such as fields and field types.
+#
+# @abstract
 class Dataset
 def self.dataset_from_database_table(table)
 	return SequelDataset.new(table)

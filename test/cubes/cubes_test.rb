@@ -31,18 +31,44 @@ def test_cube
 
 end
 
-def xxtest_date_dimension
+def test_date_dimension
 	dataset = Dataset.dataset_from_database_table(@connection[:dm_date])
-	assert_equal(1096,dataset.count)
+	assert_equal(1097,dataset.count)
 
 	dim = Dimension.new
-	dim.hierarchy = [:year, :month, :day]
 	dim.dataset = dataset
+	dim.hierarchy = [:year, :month, :day]
 
-	years = dim.values_at_path([:year])
+	dim.levels = { :year => [:year],
+		           :month => [:month, :month_name, :month_sname],
+			       :day => [:day] }
+
+	years = dim.drill_down_path([])
+	assert_equal([2009, 2010, 2011, 2012], years.collect {|r| r[:year] })
+
+	months2009 = dim.drill_down_path([2009]).collect {|r| r[:month] }
+	months2010 = dim.drill_down_path([2010]).collect {|r| r[:month] }
+	months2011 = dim.drill_down_path([2010]).collect {|r| r[:month] }
+	months2012 = dim.drill_down_path([2012]).collect {|r| r[:month] }
+	months_any = dim.drill_down_path([:all]).collect {|r| r[:month] }
 	
-	assert_equal([2009, 2010, 2011], years)
+	assert_equal([6,7,8,9,10,11,12], months2009)
+	assert_equal(12, months2010.count)
+	assert_equal(months2010, months2011)
+	assert_equal(months2010, months_any)
+	assert_equal([1,2,3,4,5,6], months2012)
 
+	months2010 = dim.drill_down_path([2010])
+	assert_equal("January", months2010[0][:month_name])
+
+ 	days_jan10 = dim.drill_down_path([2010, 1]).collect {|r| r[:day] }
+	assert_equal(31, days_jan10.count)
+
+ 	days_jan = dim.drill_down_path([:all, 1]).collect {|r| r[:day] }
+	assert_equal(31, days_jan.count)
+
+ 	all_days = dim.drill_down_path([:all, :all]).collect {|r| r[:day] }
+	assert_equal(31, all_days.count)
 end
 
 def create_date_dimension
@@ -70,8 +96,8 @@ def create_date_dimension
 	
 	date_dim = @connection[@date_dim_table]
 
-	date = Date.strptime('2009-01-01')
-	end_date = Date.strptime('2012-01-01')
+	date = Date.strptime('2009-06-01')
+	end_date = Date.strptime('2012-06-01')
 	
 	while date <= end_date do
 		record = {
