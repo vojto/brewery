@@ -13,7 +13,6 @@ def initialize(table)
 	@table = table
 	@connection = table.db
 	@table_name = table.first_source
-	# puts "T: #{@table} C:#{@connection} TN:#{@table_name}"
 end
 
 def fields
@@ -39,17 +38,18 @@ def table
 end
 
 def select(selection)
-	if selection.class != Hash
-		raise RuntimeError, "SequelDataset select accepts only hash (form: field=>expression)"
+	if selection.class == Hash
+		rehash = Hash.new
+		
+		# They have to be kidding me ... expressions as keys and column names as values??
+		selection.keys.each { |key|
+			rehash[selection[key].to_s.lit] = key
+		}
+		
+		return @table.select(rehash)
+	else
+		return @table.select(selection)
 	end
-
-	rehash = Hash.new
-	
-	selection.keys.each { |key|
-		rehash[selection[key].to_s.lit] = key
-	}
-	
-	return @table.select(rehash)
 end
 
 end # class
