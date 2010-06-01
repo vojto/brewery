@@ -1,64 +1,47 @@
 module Brewery
 class Cube
-attr_reader :table
+
+# Dataset containing facts
+attr_reader :dataset
+attr_reader :dimensions
+
+# Whole slice
+attr_reader :whole
+
+# @private
+attr_reader :joins
+
+def initialize
+	@dimensions = Hash.new
+	@joins = Hash.new
+	@whole = Slice.new(self)
+end
 
 def dataset=(dataset)
 	@dataset = dataset
 end
 
 def aggregate(measure, aggregations)
-	agg_to_sql = {:sum => "SUM", :count => "COUNT", :average => "AVG", :min => "MIN", :max => "MAX"}
+	return @whole.aggregate(measure, aggregations)
+end
 
-	expressions = Array.new
-	selections = Hash.new
-	
-	# FIXME: This is Sequel-dependent (which is wrong)
+def add_dimension(dimension_name, dimension)
+	@dimensions[dimension_name] = dimension
+end
 
-	i = 0
-	aggregations.each { |agg|
-		sql_aggregation = agg_to_sql[agg]
-		# FIXME: add this to unit testing
-		if !sql_aggregation
-			raise RuntimeError, "Unknown aggregation '#{agg}'"
-		end
-		
-		# expression = "#{sql_aggregation}(#{measure}) AS #{agg}_#{i}"
-		field = "agg_#{i}".to_sym
-		expression = "#{sql_aggregation}(#{measure})"
+def remove_dimension(dimension_name)
+	@dimensions.delete(dimension_name)
+end
 
-		selections[field] = expression
-		
-		i = i+1
-	}
-	
-	selections[:record_count] = "COUNT(1)"
-	selection = @dataset.select(selections).first
+def join_dimension(dimension_name, dimension, table_field, dimension_field)
+	@joins[dimension_name] = { :dimension => dimension, 
+							   :dimension_field => dimension_field,
+							   :table_field => table_field}
+end
 
-	i = 0
-	result = Hash.new
-	
-	aggregations.each { |agg|
-		field = "agg_#{i}".to_sym
-		value = selection[field]
-
-		# FIXME: use appropriate type (Sequel SQLite returns String)
-		if value.class == String
-			value = value.to_f
-		end
-		result[agg] = value
-	
-		i = i+1
-	}
-	
-	# FIXME: use appropriate type (Sequel returns String)
-	value = selection[:record_count]
-	if value.class == String
-		value = value.to_f
-	end
-	result[:record_count] = value
-
-	return result
+def slice(dimension, cut_values)
+	return @whole.slice(dimension, cut_values)
 end
 
 end # class
-end #module
+end # module

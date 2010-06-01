@@ -48,6 +48,7 @@ require 'brewery/quality/quality_auditor'
 # Cubes
 require 'brewery/cubes/cube.rb'
 require 'brewery/cubes/dimension.rb'
+require 'brewery/cubes/slice.rb'
 
 # require 'brewery-streams'
 

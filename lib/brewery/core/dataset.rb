@@ -12,6 +12,9 @@ end
 end # class
 
 class SequelDataset < Dataset
+attr_reader :table_name
+attr_reader :connection
+
 def initialize(table)
 	@table = table
 	@connection = table.db

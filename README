@@ -8,9 +8,16 @@ Brewery is a ruby framework for:
 * automated data processing
 * data mining
 
+DEPENDENCIES:
+
+* DataMapper - dm-core http://github.com/datamapper/dm-core
+* DataMapper Data Objects - do - http://github.com/datamapper/do/
+* typhoeus - http://github.com/pauldix/typhoeus
+
+Temporary dependencies:
+* Sequel
+
+
 AUTHOR
 
 Stefan Urbanek <stefan@knowerce.sk>
-Knowerce, s.r.o.
-http://www.knowerce.sk
-
