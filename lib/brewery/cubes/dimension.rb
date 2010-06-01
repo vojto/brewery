@@ -43,7 +43,7 @@ end
 #
 # == Example:
 # @example Get all months:
-#   date_dimension.drill_down_path([2009])
+#   date_dimension.drill_down_values([2009])
 #   # Result:
 #   { :month => 1, :month_name => "January", :month_short_name => "Jan" }
 #   { :month => 2, :month_name => "February", :month_short_name => "Feb" }
@@ -57,7 +57,7 @@ end
 # == Returns:
 # Array of records as hashes.
 #
-def drill_down_path(path)
+def drill_down_values(path)
 	# 2009 -> all months
 	# 2009, 2 -> all days
 	# 2009, :all -> all days for all months
@@ -115,6 +115,23 @@ def drill_down_path(path)
 			
 end
 
+# Return path which is one level below given path. If no path is provided, return path to
+# first level. If path at last level is provided, return same path.
+def drill_down_level(path)
+	# FIXME: check validity of path
+	# validate_path(path)
+	
+	if !path
+		return @hierarchy[0]
+	end
+	
+	next_level = path.count
+	if next_level >= @hierarchy.count
+		return @hierarchy.last
+	end
+	
+	return @hierarchy[next_level]
+end
 
 # Returns path in hierarchy which is one level higher than given path
 #
@@ -125,14 +142,19 @@ end
 #
 # == Parameters:
 # path::
-#   Array of values for corresponding dimension hierarchy level. If `:all` is used, 
-#   then every value for that level is considered.
+#   Array of values for corresponding dimension hierarchy level. 
 #
 # == Returns:
 # Path represented by array of values
 #
 def roll_up_path(path)
-	raise RuntimeError, "Not implemented"
+	if !path or path == []
+		return []
+	end
+	
+	up_path = path.dup
+	up_path.delete_at(-1)
+	return up_path
 end
 
 # FIXME: temporary SQL functions
