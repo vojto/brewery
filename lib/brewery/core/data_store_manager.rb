@@ -52,7 +52,7 @@ def add_stores_in_default_files
 	for file in @@default_files
 		path = Pathname.new(file).expand_path
 		if path.exist? and path.file?
-			add_stores_in_file(file)
+			add_stores_in_file(path)
 		end
 	end
 

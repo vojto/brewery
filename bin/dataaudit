@@ -102,7 +102,12 @@ def run
 	end
 	
 	# Set-up auditor
-	connection = Brewery::data_store_manager.create_connection(store_name)
+	store_manager = Brewery::data_store_manager
+	if !store_manager.data_store(store_name)
+		raise RuntimeError, "Unknown data store with name #{store_name}"
+	end
+	
+	connection = store_manager.create_connection(store_name)
 	if !connection
 		raise RuntimeError, "Unable to create connection #{store_name}"
 	end
