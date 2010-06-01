@@ -194,13 +194,6 @@ def test_cube
     results = slice.drill_down_aggregate(:category, :category, :revenue, [:sum])
     assert_equal(600, results[0][:sum])
     assert_equal(500, results[1][:sum])
-
-    results = cube.whole.drill_down_aggregate(:category, :category, :revenue, [:sum])
-    results.each { |result|
-        puts "| #{result[:category]} #{result[:sum].to_f} #{result[:record_count]} |"
-    }
-
-	puts "CCC #{results.count}"
 end
 
 

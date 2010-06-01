@@ -9,7 +9,6 @@ attr_reader :dimensions
 attr_reader :whole
 
 # @private
-attr_reader :joins
 
 def initialize
 	@dimensions = Hash.new
@@ -25,18 +24,25 @@ def aggregate(measure, aggregations)
 	return @whole.aggregate(measure, aggregations)
 end
 
-def add_dimension(dimension_name, dimension)
-	@dimensions[dimension_name] = dimension
+# Join dimension to cube
+#
+# == Parameters:
+# dimension_name::
+#   Name (as symbol) of dimension related to cube.
+# dimension_key_field::
+#   Name of key field in dimension dataset to be used on join with cube dataset.
+# table_key_field::
+#   Name of key field in cube dataset/table to be used on join with dimension.
+#
+def join_dimension(dimension_name, dimension, table_key_field, dimension_key_field)
+	@dimensions[dimension_name] = { :dimension => dimension, 
+							        :dimension_key => dimension_key_field,
+							        :table_key => table_key_field}
 end
 
-def remove_dimension(dimension_name)
-	@dimensions.delete(dimension_name)
-end
-
-def join_dimension(dimension_name, dimension, table_field, dimension_field)
-	@joins[dimension_name] = { :dimension => dimension, 
-							   :dimension_field => dimension_field,
-							   :table_field => table_field}
+# Provide dimension join information
+def dimension(dimension_name)
+	return @dimensions[dimension_name]
 end
 
 def slice(dimension, cut_values)

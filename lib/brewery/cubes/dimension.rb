@@ -136,12 +136,12 @@ def roll_up_path(path)
 end
 
 # FIXME: temporary SQL functions
-def sql_join_expression(dimension_field, fact_field, dimension_alias = nil)
+def sql_join_expression(dimension_field, fact_field, dimension_alias, table_alias)
 	# FIXME: may cause issues with schemas
 	table_name = dataset.table_name
 
 	join_expression = "JOIN #{table_name} #{dimension_alias} " +
-						"ON (#{dimension_alias}.#{dimension_field} = f.#{fact_field})"
+						"ON (#{dimension_alias}.#{dimension_field} = #{table_alias}.#{fact_field})"
 
 	return join_expression
 end
