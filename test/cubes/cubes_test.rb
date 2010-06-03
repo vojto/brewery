@@ -16,8 +16,8 @@ def setup
 	create_example_data
 	define_dimensions
 	
-	
 	@product_dataset = Dataset.dataset_from_database_table(@connection[:ft_product])
+	create_cube
 end
 
 def define_dimensions
@@ -38,6 +38,11 @@ def define_dimensions
 
 	dim.levels = { :category => [:category_code, :category] }
 	@category_dimension = dim
+
+	# Add dimensions to workspace
+	ws = Workspace.default_workspace
+	ws.add_dimension(:date, @date_dimension)
+	ws.add_dimension(:category, @category_dimension)
 end
 
 def create_date_dimension
@@ -123,17 +128,25 @@ def create_example_data
 	table = @connection[:ft_product]
 	
 	values = [
-		{:date_id => '20100101', :category => 'new', :product => 'foo', :revenue => 100, :amount => 10},
-		{:date_id => '20100102', :category => 'new', :product => 'bar', :revenue => 200, :amount => 10},
-		{:date_id => '20100203', :category => 'old', :product => 'fooz', :revenue => 300, :amount => 20},
-		{:date_id => '20100204', :category => 'old', :product => 'barz', :revenue => 400, :amount => 20},
-		{:date_id => '20100301', :category => 'old', :product => 'fooz', :revenue => 500, :amount => 30},
-		{:date_id => '20100301', :category => 'new', :product => 'bar', :revenue => 600, :amount => 30},
-		{:date_id => '20100401', :category => 'new', :product => 'foo', :revenue => 700, :amount => 40}
+		{:date_id => 20100101, :category => 'new', :product => 'foo', :revenue => 100, :amount => 10},
+		{:date_id => 20100102, :category => 'new', :product => 'bar', :revenue => 200, :amount => 10},
+		{:date_id => 20100203, :category => 'old', :product => 'fooz', :revenue => 300, :amount => 20},
+		{:date_id => 20100204, :category => 'old', :product => 'barz', :revenue => 400, :amount => 20},
+		{:date_id => 20100301, :category => 'old', :product => 'fooz', :revenue => 500, :amount => 30},
+		{:date_id => 20100301, :category => 'new', :product => 'bar', :revenue => 600, :amount => 30},
+		{:date_id => 20100401, :category => 'new', :product => 'foo', :revenue => 700, :amount => 40}
 	]
 	table.multi_insert(values)
 	
 end
+
+def create_cube
+	@cube = Cube.new
+	@cube.dataset = @product_dataset
+	@cube.join_dimension(:date, :date_id, :id)
+	@cube.join_dimension(:category, :category, :category_code)
+end
+
 def test_dimension
 	dim = @date_dimension
 
@@ -191,51 +204,42 @@ def test_date_dimension
 	assert_equal(31, all_days.count)
 end
 
-def _test_cube
-	cube = Cube.new
-	cube.dataset = @product_dataset
-	cube.join_dimension(:date, @date_dimension, :date_id, :id)
-	cube.join_dimension(:category, @category_dimension, :category, :category_code)
-
+def test_cube
 	
-	values = cube.aggregate(:amount)
-	assert_equal(160, values[:sum])
-	assert_equal(7, values[:record_count])
+	values = @cube.whole.aggregate(:amount)
+	assert_equal(160, values[0][:sum])
+	assert_equal(7, values[0][:record_count])
 
-	values = cube.aggregate(:revenue)
-	assert_equal(2800, values[:sum])
-	assert_equal(7, values[:record_count])
+	values = @cube.whole.aggregate(:revenue)
+	assert_equal(2800, values[0][:sum])
+	assert_equal(7, values[0][:record_count])
 
-	slice = cube.slice(:date, [2010, 3])
+	slice = @cube.whole.cut_by_point(:date, [2010, 3])
 	values = slice.aggregate(:revenue)
-	assert_equal(1100, values[:sum])
-	assert_equal(2, values[:record_count])
+	assert_equal(1100, values[0][:sum])
+	assert_equal(2, values[0][:record_count])
 
-	cat_slice = slice.slice(:category, ['new'])
+	cat_slice = slice.cut_by_point(:category, ['new'])
 	values = cat_slice.aggregate(:revenue)
-	assert_equal(600, values[:sum])
-	assert_equal(1, values[:record_count])
+	assert_equal(600, values[0][:sum])
+	assert_equal(1, values[0][:record_count])
 
-    results = slice.drill_down_aggregate(:category, :category, :revenue, [:sum])
+    results = slice.aggregate(:revenue, { :row_dimension => :category,
+    				                      :row_levels => [:category]} )
     assert_equal(600, results[0][:sum])
     assert_equal(500, results[1][:sum])
     
 end
 
 def test_cuts
-	ws = Workspace.default_workspace
-	ws.add_dimension(:date, @date_dimension)
-	ws.add_dimension(:category, @category_dimension)
 
-	cube = Cube.new
-	cube.dataset = @product_dataset
-	cube.join_dimension(:date, :date_id, :id)
-	cube.join_dimension(:category, :category, :category_code)
+	slice = @cube.whole.cut_by_point(:date, [2010])
+    results = slice.aggregate(:revenue)
+    assert_equal(2800, results[0][:sum])
 
-	slice = cube.whole.cut_by_point(:date, [2010])
-    slice.aggregate_new_sql(:revenue)
-    slice.aggregate_new_sql(:revenue, {:row_dimension => :date, 
+    results = slice.aggregate(:revenue, {:row_dimension => :date, 
     								   :row_levels => [:year, :month]})
+    assert_equal(300, results[0][:sum])
     								   
 	from_key = @date_dimension.key_for_path([2010,1,1])
 	assert_equal(20100101, from_key)
@@ -244,11 +248,13 @@ def test_cuts
 	from_key = @date_dimension.key_for_path([2010])
 	assert_equal(20100101, from_key)
 
-	to_key = @date_dimension.key_for_path([2010,1,20])
+	to_key = @date_dimension.key_for_path([2010,2,3])
 
-	slice = cube.whole.cut_by_range(:date, from_key, to_key)
-    slice.aggregate_new_sql(:revenue, {:row_dimension => :date, 
-    								   :row_levels => [:year, :month]})
+	slice = @cube.whole.cut_by_range(:date, from_key, to_key)
+    results = slice.aggregate(:revenue, {:row_dimension => :date, 
+    			                      :row_levels => [:year, :month]})
+    assert_equal(300, results[0][:sum])
+    assert_equal(2, results.count)
 end
 
 end

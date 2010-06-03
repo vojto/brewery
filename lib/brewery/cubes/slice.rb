@@ -55,237 +55,8 @@ def dataset
     @cube.dataset
 end
 
-def aggregate(measure)
-    ################################################
-    # Prepare selections
-
-	# FIXME
-	aggregations = [:sum]
-
-	expressions = Array.new
-    i = 0
-    aggregations.each { |operator|
-        expressions << sql_field_aggregate(measure, operator, "agg_#{i}")
-        i = i+1
-    }
-    
-    expressions << "COUNT(1) AS record_count"
-
-    select_expression = expressions.join(', ')
-    
-    fact_table = @cube.dataset.table_name
-    statement = "SELECT #{select_expression} FROM #{fact_table} f"
-
-    joins = Array.new
-    conditions = Array.new
-
-    i = 0
-    @cut_values.keys.each { |cut_dimension|
-        # puts "CUT: #{cut_dimension}"
-        dim_alias = "d#{i}"
-        i += 1
-
-        cut_values = @cut_values[cut_dimension]
-
-        join_info = @cube.dimension_join(cut_dimension)
-        dimension = join_info[:dimension]
-        dim_table = dimension.dataset.table_name
-
-        sql_join = dimension.sql_join_expression(join_info[:dimension_key],
-                                                 join_info[:table_key],
-                                                 dim_alias, 'f')
-
-        joins << sql_join
-        
-        sql_condition = dimension.sql_condition(cut_values, dim_alias)
-        conditions << sql_condition
-    }
-
-    if @cut_values.keys.count > 0
-        join_expression = joins.join(' ')
-        condition_expression = conditions.join(' AND ')
-        statement = statement +" #{join_expression} WHERE #{condition_expression}"
-    end 
-    
-    # puts "SQL: #{statement}"
-    
-    # FIXME: This is very ugly hack, Sequel dependent
-    selection = @cube.dataset.connection[statement].first
-
-    i = 0
-    result = Hash.new
-    
-    aggregations.each { |agg|
-        field = "agg_#{i}".to_sym
-        value = selection[field]
-
-        # FIXME: use appropriate type (Sequel SQLite returns String)
-        if value.class == String
-            value = value.to_f
-        end
-        result[agg] = value
-    
-        i = i+1
-    }
-    
-    # FIXME: use appropriate type (Sequel returns String)
-    value = selection[:record_count]
-    if value.class == String
-        value = value.to_f
-    end
-    result[:record_count] = value
-
-    return result
-end
-
-def drill_down_aggregate(drill_dimension_name, level, measure, aggregations)
-    # FIXME: validate: existence of drill_dimension_name, measure, aggregations
-    
-    drill_join_info = @cube.dimension_join(drill_dimension_name)
-    drill_dimension = drill_join_info[:dimension]
-    drill_level_fields = drill_dimension.levels[level]
-    table_alias = "f"
-
-    selections = Array.new
-    joins = Array.new
-    conditions = Array.new
-
-    fact_table = @cube.dataset.table_name
-
-
-    ################################################
-    # Prepare selections
-
-    i = 0
-    aggregations.each { |operator|
-        selections << sql_field_aggregate(measure, operator, "agg_#{i}")
-        i = i+1
-    }
-    selections << "COUNT(1) AS record_count"
-
-    ################################################
-    # Prepare cuts
-    joined_dimensions = Hash.new
-    
-    i = 0
-    @cut_values.keys.each { |cut_dimension|
-        dim_alias = "d#{i}"
-        i += 1
-    
-        joined_dimensions[cut_dimension] = dim_alias
-        cut_values = @cut_values[cut_dimension]
-
-        # FIXME: check that dim is within same connection
-        join_info = @cube.dimension_join(cut_dimension)
-        dimension = join_info[:dimension]
-        dim_table = dimension.dataset.table_name
-
-        sql_join = dimension.sql_join_expression(join_info[:dimension_key],
-                                                 join_info[:table_key],
-                                                 dim_alias, table_alias)
-
-        joins << sql_join
-
-        condition = dimension.sql_condition(cut_values, dim_alias)
-        conditions << condition
-    }
-
-    ################################################
-    # Append drill-down (group by) dimension
-
-    drill_dim_alias = joined_dimensions[drill_dimension_name]
-
-    if !drill_dim_alias
-        join_info = @cube.dimension_join(drill_dimension_name)
-        drill_dim_alias = "d#{i}"
-        sql_join = drill_dimension.sql_join_expression(join_info[:dimension_key],
-                                                       join_info[:table_key],
-                                          			   drill_dim_alias, table_alias)
-        joins << sql_join
-    end
-
-     if drill_level_fields && ! drill_level_fields.empty?
-         
-         drill_select_fields = drill_level_fields.collect { |level|
-                 "#{drill_dim_alias}.#{level}"
-         }
-     
-         drill_selection = drill_select_fields.join(', ')
-     else
-         drill_selection = nil
-     end
-     
-     select_expression = "#{selections.join(', ')}"
- 	 if drill_selection
-	     select_expression = "#{select_expression}, #{drill_selection}"
- 	 end
- 	 
-     if joins.count > 0
-         join_expression = joins.join(' ')
-     else
- 		join_expression = ""
-     end
-    
-    if conditions.count > 0
-        condition_expression = "WHERE " + conditions.join(' AND ')
-	else
-		condition_expression = ''
-    end 
-
-    if drill_select_fields.count > 0
-		drill_fields_str = drill_select_fields.join(', ')
-        group_expression = "GROUP BY #{drill_fields_str}"
-        order_expression = "ORDER BY #{drill_fields_str}"
-	else
-        group_expression = ""
-        order_expression = ""
-    end
-
-    statement = "SELECT #{select_expression} FROM #{fact_table} #{table_alias}
-    				#{joins.join(' ')}
-    				#{condition_expression} #{group_expression} #{order_expression}"
-    
-    # puts "DRILL SQL: #{statement}"
-    # FIXME: This is very ugly hack, Sequel dependent
-    selection = @cube.dataset.connection[statement]
-    results = Array.new
-    selection.each { |record|
-    
-        i = 0
-        result = Hash.new
-        
-        aggregations.each { |agg|
-            field = "agg_#{i}".to_sym
-            value = record[field]
-    
-            # FIXME: use appropriate type (Sequel SQLite returns String)
-            if value.class == String
-                value = value.to_f
-            end
-            result[agg] = value
-        
-            i = i+1
-        }
-        
-        drill_level_fields.each { |level|
-            result[level] = record[level]
-
-        }
-        value = record[:record_count]
-        if value.class == String
-            value = value.to_f
-        end
-        result[:record_count] = value
-
-        results << result
-    }
-    
-    # FIXME: use appropriate type (Sequel returns String)
-
-    return results
-end
-
-# FIXME: make this THE aggregation method
+# Aggregate measure.
+#
 # == Options:
 # * row_dimension - dimension used for row grouping
 # * row_levels - group by dimension levels
@@ -294,17 +65,28 @@ end
 # * limit_sort - :ascending, :descending
 # == Examples:
 # * aggregate_new(:amount, { :row_dimension => dimension, :row_levels => levels} )
-def aggregate_new_sql(measure, options = {})
+# @returns Array of results [Array]
+def aggregate(measure, options = {})
 	row_dimension_name = options[:row_dimension]
 	row_dimension = @cube.workspace.dimension(row_dimension_name)
 	row_levels = options[:row_levels]
 	
+	if row_levels && row_levels.class != Array
+		raise RuntimeError, "Row levels should be an array"
+	end
+	if row_dimension_name && row_dimension_name.class != Symbol && row_dimension_name.class != String
+		raise RuntimeError, "Row dimension should be name as String or Symbol"
+	end	
+	if row_dimension_name && !row_dimension
+		raise RuntimeError, "Unknown dimension #{row_dimension_name} (does not exist in workspace)"
+	end
+	
+	table_alias = "t"
 
     ################################################
 	# 0. Collect tables to be joined
 
 	dimension_aliases = Hash.new
-
 	all_dimensions = Array.new
 
 	dims = @cuts.collect { |cut| cut.dimension }
@@ -312,6 +94,8 @@ def aggregate_new_sql(measure, options = {})
 	if row_dimension
 		all_dimensions << row_dimension_name
 	end
+	
+	all_dimensions = all_dimensions.uniq
 	
 	i = 0
     all_dimensions.each { |dimension|
@@ -340,12 +124,14 @@ def aggregate_new_sql(measure, options = {})
     selections << "COUNT(1) AS record_count"
 
     # 1.3 Row fields - from dimension
+    row_fields = Array.new
     if row_levels
 		for i in ( 0..(row_levels.count - 1) )
 			level_fields = row_dimension.fields_for_level(row_levels[i])
 			level_fields.each { |field|
 				selection = "#{row_dimension_alias}.#{field}"
 				selections << selection
+				row_fields << field
 			}
 		end
 	end
@@ -375,12 +161,30 @@ def aggregate_new_sql(measure, options = {})
 			}
 		end
 	end
+	
 
     ################################################
-	# x. DO IT!
-	puts "SLICE"
+	# 4. Join
+
+	joins = Array.new
+
+	all_dimensions.each { |dim_name|
+		dim_alias = dimension_aliases[dim_name]
+		dimension = @cube.dimension(dim_name)
+        join_info = @cube.dimension_join_info(dim_name)
+
+        joins << dimension.sql_join_expression(join_info[:dimension_key],
+                                               join_info[:table_key],
+                                               dim_alias, table_alias)
+	}
+
+    ################################################
+	# 5. Create SQL SELECT statement
 	
 	select_expr = selections.join(', ')
+	
+	join_expr = joins.join(' ')
+	
 	if filters && filters.count > 0
 		joined_filters = filters.join(' AND ')
 		filter_expr = "WHERE #{joined_filters}"
@@ -402,13 +206,54 @@ def aggregate_new_sql(measure, options = {})
 		sort_expr = ''
 	end
 
-raise "FIXME: Continue here: add joins"
+	table_name = @cube.dataset.table_name
+	statement = "SELECT #{select_expr}
+				FROM #{table_name} #{table_alias}
+				#{join_expr}
+				#{filter_expr}
+				#{group_expr}
+				#{sort_expr}"
 
-	statement = "SELECT #{select_expr} #{filter_expr} #{group_expr} #{sort_expr}"
+    ################################################
+	# 6. Execute statement
 
-	puts "#{statement}"
+	# puts "#{statement}"
+    selection = @cube.dataset.connection[statement]
 
-    # return results
+    ################################################
+	# 7. Collect results
+
+    results = Array.new
+    selection.each { |record|
+    
+        result_row = Hash.new
+        
+		for i in ( 0..(operators.count - 1) )
+            field = "agg_#{i}".to_sym
+            value = record[field]
+    
+            # FIXME: use appropriate type (Sequel SQLite returns String)
+            if value.class == String
+                value = value.to_f
+            end
+            result_row[operators[i]] = value
+    	end
+
+		# Collect fields from dimension levels
+        row_fields.each { |field|
+            result_row[field] = record[field]
+        }
+
+        value = record[:record_count]
+        if value.class == String
+            value = value.to_f
+        end
+        result_row[:record_count] = value
+
+        results << result_row
+    }
+
+    return results
 end
 
 

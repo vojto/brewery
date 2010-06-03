@@ -49,12 +49,13 @@ def join_dimension(dimension_name, table_key_field, dimension_key_field)
 end
 
 # Provide dimension join information
-def dimension_join(dimension_name)
+def dimension_join_info(dimension_name)
 	return @joined_dimensions[dimension_name]
 end
 
 def dimension(dimension_name)
-	return @joined_dimensions[dimension_name][:dimension]
+	# FIXME: check existence of dimension and whether it is joined with cube
+	return @workspace.dimension(dimension_name)
 end
 
 def slice(dimension, cut_values)
