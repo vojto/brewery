@@ -32,8 +32,15 @@ attr_accessor :hierarchy
 # Hash of hierarchy levels in the form: level => [fields]
 attr_accessor :levels
 
+# Key field
+attr_accessor :key_field
+
 # Dimension name
 attr_accessor :name
+
+def initialize
+	@key_field = :id
+end
 
 def dataset=(dataset)
 	@dataset = dataset
@@ -115,6 +122,46 @@ def drill_down_values(path)
 			
 end
 
+# Return dimension key for given path. If path is not complete, returns min key
+# for most matching path.
+def key_for_path(path)
+	level = 0
+	conditions = Array.new
+	
+	path.each { |level_value|
+		level_column = hierarchy[level]
+		conditions << {:column =>level_column, :value => level_value}	
+		# puts "LEVEL #{level}: #{level_column} = #{level_value}"
+		level = level + 1
+	}
+
+	level_name = hierarchy[level-1]
+	
+	# FIXME: this is valid only while there is only Sequel implementatin of datasets
+	data = @dataset.table
+	
+	conditions.each { |cond|
+		if cond[:value] != :all
+			data = data.filter(cond[:column] => cond[:value])
+		end
+	}
+	
+	values = Array.new
+	
+	# FIXME: limit selected columns (do not select all, only those required by level)
+	fields = [@key_field]
+	fields.concat(@levels[level_name])
+
+	data = data.clone(:order => [@key_field])
+	data = data.clone(:select => fields)
+	first = data.first
+	if first
+		return first[@key_field]
+	else
+		return nil
+	end
+end
+
 # Return path which is one level below given path. If no path is provided, return path to
 # first level. If path at last level is provided, return same path.
 def drill_down_level(path)
@@ -131,6 +178,19 @@ def drill_down_level(path)
 	end
 	
 	return @hierarchy[next_level]
+end
+
+def path_levels(path)
+	if !path || path.count == 0
+		return []
+	end
+	
+	return @hierarchy[0..(path.count-1)]
+end
+
+# Return all fields that represent @level
+def fields_for_level(level)
+	return levels[level]
 end
 
 # Returns path in hierarchy which is one level higher than given path
@@ -168,25 +228,6 @@ def sql_join_expression(dimension_field, fact_field, dimension_alias, table_alia
 	return join_expression
 end
 
-def sql_condition(hierarchy_values, dimension_alias)
-	conditions = Array.new
-	level = 0
-	hierarchy_values.each { |level_value|
-		# FIXME: handle other level values, such as: ranges, lists, ...
-		if level_value != :all
-			level_name = @hierarchy[level]
-			# puts "LEVEL: #{level_name}"
-			level_column = @levels[level_name][0]
-			quoted_value = quote_value(level_value)
-			conditions << "#{dimension_alias}.#{level_column} = #{quoted_value}"	
-		end
-		level = level + 1
-	}
-	
-	cond_expression = conditions.join(" AND ")
-	
-	return cond_expression
-end
 
 def to_hash
 	hash = Hash.new
