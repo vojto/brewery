@@ -6,12 +6,15 @@ def initialize(dimension = nil)
     @dimension = dimension
 end
 
+# Create a cut by a point within dimension.
 def self.point_cut(dimension, path)
     cut = PointCut.new(dimension)
     cut.path = path
     return cut
 end
 
+# Create a cut within a range defined by keys. Can be used for ordered dimensions,
+# such as date.
 def self.range_cut(dimension, from_key, to_key)
     cut = RangeCut.new(dimension)
     cut.from_key = from_key
@@ -19,12 +22,15 @@ def self.range_cut(dimension, from_key, to_key)
     return cut
 end
 
+# Cut by a set of values
 def self.set_cut(dimension, path_set)
     cut = SetCut.new(dimension)
     cut.path_set = path_set
     return cut
 end
 
+# Return SQL condition for a cut
+# @api private
 def sql_condition(dimension_alias)
     raise RuntimeError, "subclasses should override sql_condition"
 end

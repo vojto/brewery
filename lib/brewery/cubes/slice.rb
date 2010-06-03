@@ -1,14 +1,40 @@
+# This comment should be ignored
+# Boo baa bah
+#
+
 require 'data_objects'
 
 module Brewery
 
+# Portion of a cube. Slices are creating by cutting cubes or other slices. Used mainly
+# for aggregating measures and drilling down through dimensions.
+#
+# @example Slicing a cube (see {Cube#whole})
+#   # Assume we have a cube with dimensions date and category
+#   slice = cube.whole # Get unsliced cube
+#   slice = slice.cut_by_point(:date, [2010])
+# @example Aggregate whole slice (see {#aggregate})
+#   rows = slice.aggregate(:amount)
+#   result = rows[0] # Only one row - summary row
+#   puts "Total amount     : result[:sum]"
+#   puts "Transaction count: result[:record_count]"
+# @example Drill-down and aggregate (see {#aggregate} with row options)
+#   rows = slice.aggregate(:amount, {:row_dimension => :date, 
+#                                    :row_levels => [:year, :month]})
+#   puts "Totals by month"
+#   result.each { |row|
+#       puts "#{row[:year]} #{row[:month_name]}: #{row[:sum]}"
+#   }
+#
+# @author Stefan Urbanek <stefan@agentfarms.net>
+
 class Slice
 include DataObjects::Quoting
 
-# FIXME: validate
-attr_accessor :cuts
+# List of cuts which define the slice - portion of a cube.
+attr_reader :cuts
 
-# FIXME: depreciated
+# @deprecated
 attr_reader :cut_values
 
 # Initialize slice instance as part of a cube
@@ -26,46 +52,65 @@ def initialize_copy(*)
 	
 end
 
+# Cut slice by provided cut
+# @see Cut#initialize
+# @param [Cut] cut to cut the slice by
+# @return [Slice] new slice with added cut
 def cut_by(cut)
 	slice = self.dup
 	slice.add_cut(cut)
 	return slice
 end
 
+# Cut slice by dimension point specified by path
+# @param [Array] path Dimension point specified by array of values. See {Dimension}
+# @see Cut#initialize
+# @return [Slice] new slice with added cut
 def cut_by_point(dimension, path)
 	return self.cut_by(Cut.point_cut(dimension, path))
 end
 
+# Cut slice by ordered dimension from point specified by dimension
+# keys in from_key to to_key
+# @return [Slice] new slice with added cut
+# @param [Array] path Dimension point specified by array of values. See {Dimension}
 def cut_by_range(dimension, from_key, to_key)
 	return self.cut_by(Cut.range_cut(dimension, from_key, to_key))
 end
 
 
+# Add another cut to the receiver.
+# @param [Cut] cut Cut to be added
 def add_cut(cut)
 	@cuts << cut
 end
 
-def slice(dimension, values)
-    slice = self.dup
-    slice.cut_values[dimension] = values
-    return slice
+# Remove all cuts by dimension from the receiver.
+def remove_cuts_by_dimension(dimension)
+	@cuts.delete_if { |cut|
+		cut.dimension == dimension
+	}
 end
 
+# @deprecated
 def dataset
     @cube.dataset
 end
 
 # Aggregate measure.
 #
-# == Options:
-# * row_dimension - dimension used for row grouping
-# * row_levels - group by dimension levels
-# * limit_type - :value, :percent, :rank
-# * limit - limit value based on limit_type 
-# * limit_sort - :ascending, :descending
+# @param [Symbol] measure Measure to be aggregated, for example: amount, price, ...
+# @param [Hash] options Options for more refined aggregation
+# @option options [Symbol] :row_dimension Dimension used for row grouping
+# @option options [Array] :row_levels Group by dimension levels
+# @option options [Symbol] :limit_type Possible values: ':value', `:percent`, `:rank`
+# @option options [Number] :limit Limit value based on limit_type 
+# @option options [Symbol] :limit_sort Possible values: `:ascending`, `:descending`
 # == Examples:
-# * aggregate_new(:amount, { :row_dimension => dimension, :row_levels => levels} )
-# @returns Array of results [Array]
+# * aggregate(:amount, { :row_dimension => [:date], :row_levels => [:year, :month]} )
+# @return [Array] list of rows where each row represents a point at row_dimension.
+#   If no row dimension is specified, only one summary row is returned.
+# @todo implement limits
 def aggregate(measure, options = {})
 	row_dimension_name = options[:row_dimension]
 	row_dimension = @cube.workspace.dimension(row_dimension_name)
@@ -257,6 +302,7 @@ def aggregate(measure, options = {})
 end
 
 
+# @private
 def sql_field_aggregate(field, operator, alias_name)
     sql_operators = {:sum => "SUM", :count => "COUNT", :average => "AVG", :min => "MIN", :max => "MAX"}
 

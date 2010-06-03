@@ -66,15 +66,16 @@ module Brewery
 @@debug = false
 
 
-# Get default data store manager. Short-cut for [Brewery::DataStoreManager.default_manager]
+# Get default data store manager. Short-cut for {DataStoreManager#default_manager}
 def self.data_store_manager
 	return DataStoreManager::default_manager
 end
 
-# Load default brewery configuration from files in the following order:
-# # ./config/brewery.yml - configuration for current project
-# # ~/.brewery.yml - user's configuration
-# # /etc/brewery.yml - system-wide configuration
+# Load default brewery configuration from files.
+# The files are being read in the following order:
+# * ./config/brewery.yml - configuration for current project
+# * ~/.brewery.yml - user's configuration
+# * /etc/brewery.yml - system-wide configuration
 #
 # First file found is loaded, the others are ignored
 def self.load_default_configuration
