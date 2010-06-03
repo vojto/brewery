@@ -154,6 +154,10 @@ def test_dimension
 	path = dim.roll_up_path(path)
 	assert_equal([], path)
 
+	assert_equal([], dim.path_levels([]))
+	assert_equal([:year], dim.path_levels([2009]))
+	assert_equal([:year, :month, :day], dim.path_levels([2009,10,1]))
+
 end
 
 def test_date_dimension
@@ -187,35 +191,64 @@ def test_date_dimension
 	assert_equal(31, all_days.count)
 end
 
-def test_cube
+def _test_cube
 	cube = Cube.new
 	cube.dataset = @product_dataset
 	cube.join_dimension(:date, @date_dimension, :date_id, :id)
 	cube.join_dimension(:category, @category_dimension, :category, :category_code)
 
 	
-	values = cube.aggregate(:amount, [:sum])
+	values = cube.aggregate(:amount)
 	assert_equal(160, values[:sum])
 	assert_equal(7, values[:record_count])
 
-	values = cube.aggregate(:revenue, [:sum])
+	values = cube.aggregate(:revenue)
 	assert_equal(2800, values[:sum])
 	assert_equal(7, values[:record_count])
 
 	slice = cube.slice(:date, [2010, 3])
-	values = slice.aggregate(:revenue, [:sum])
+	values = slice.aggregate(:revenue)
 	assert_equal(1100, values[:sum])
 	assert_equal(2, values[:record_count])
 
 	cat_slice = slice.slice(:category, ['new'])
-	values = cat_slice.aggregate(:revenue, [:sum])
+	values = cat_slice.aggregate(:revenue)
 	assert_equal(600, values[:sum])
 	assert_equal(1, values[:record_count])
 
     results = slice.drill_down_aggregate(:category, :category, :revenue, [:sum])
     assert_equal(600, results[0][:sum])
     assert_equal(500, results[1][:sum])
+    
 end
 
+def test_cuts
+	ws = Workspace.default_workspace
+	ws.add_dimension(:date, @date_dimension)
+	ws.add_dimension(:category, @category_dimension)
+
+	cube = Cube.new
+	cube.dataset = @product_dataset
+	cube.join_dimension(:date, :date_id, :id)
+	cube.join_dimension(:category, :category, :category_code)
+
+	slice = cube.whole.cut_by_point(:date, [2010])
+    slice.aggregate_new_sql(:revenue)
+    slice.aggregate_new_sql(:revenue, {:row_dimension => :date, 
+    								   :row_levels => [:year, :month]})
+    								   
+	from_key = @date_dimension.key_for_path([2010,1,1])
+	assert_equal(20100101, from_key)
+	from_key = @date_dimension.key_for_path([2010,3])
+	assert_equal(20100301, from_key)
+	from_key = @date_dimension.key_for_path([2010])
+	assert_equal(20100101, from_key)
+
+	to_key = @date_dimension.key_for_path([2010,1,20])
+
+	slice = cube.whole.cut_by_range(:date, from_key, to_key)
+    slice.aggregate_new_sql(:revenue, {:row_dimension => :date, 
+    								   :row_levels => [:year, :month]})
+end
 
 end
