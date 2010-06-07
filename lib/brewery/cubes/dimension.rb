@@ -23,23 +23,45 @@ module Brewery
 class Dimension
 include DataObjects::Quoting
 
-# Dataset (table) that contains dimension values
-attr_reader :dataset
+# Dimension label
+# @todo Make localizable
+attr_accessor :label
 
 # Dimension hierarchy - array of field names that define hierarchy.
 attr_accessor :hierarchy
 
 # Hash of hierarchy levels in the form: level => [fields]
-attr_accessor :levels
+# attr_accessor :levels
 
+# More detailed description of the dimension
+attr_accessor :description
+
+# Dataset (table) that contains dimension values
+attr_reader :dataset
 # Key field
 attr_accessor :key_field
 
-# Dimension name
-attr_accessor :name
+def self.dataset_from_file(path)
+	hash = YAML.load_file(path)
+	if !hash
+		return nil
+	end
+	
+	dim = Dimension.new
+	dim.label = hash[:label]
+	dim.description = hash[:description]
+	levels = hash[:levels]
+	if levels
+		levels.keys.each { |key|
+			level = levels[:key]
+#			...
+		}
+	end
+end
 
 def initialize
 	@key_field = :id
+	@levels = Hash.new
 end
 
 def dataset=(dataset)
@@ -93,30 +115,21 @@ def drill_down_values(path)
 	
 	# FIXME: limit selected columns (do not select all, only those required by level)
 
-	if @levels
-	
-		level_fields = @levels[level_name]
-		#str = level_fields.collect{|f| f.to_s.lit}.join(',')
-		# data = data.group(level_fields).order(level_fields)
-		data = data.clone(:group => level_fields)
-		data = data.clone(:order => level_fields)
-		data = data.clone(:select => level_fields)
-		# puts "SQL: #{data.sql}"
-		data.each { |row|
-			record = Hash.new
-			level_fields.each { |field|
-				record[field] = row[field]
-			}
-
-			values << record
+	level_fields = fields_for_level(level_name)
+	#str = level_fields.collect{|f| f.to_s.lit}.join(',')
+	# data = data.group(level_fields).order(level_fields)
+	data = data.clone(:group => level_fields)
+	data = data.clone(:order => level_fields)
+	data = data.clone(:select => level_fields)
+	# puts "SQL: #{data.sql}"
+	data.each { |row|
+		record = Hash.new
+		level_fields.each { |field|
+			record[field] = row[field]
 		}
 
-	else
-		data = data.group(level_name).order(level_name)
-		data.each { |row|
-			values << { level_name => row[level_name] }
-		}
-	end
+		values << record
+	}
 
 	return values
 			
@@ -150,7 +163,7 @@ def key_for_path(path)
 	
 	# FIXME: limit selected columns (do not select all, only those required by level)
 	fields = [@key_field]
-	fields.concat(@levels[level_name])
+	fields.concat(fields_for_level(level_name))
 
 	data = data.clone(:order => [@key_field])
 	data = data.clone(:select => fields)
@@ -188,9 +201,23 @@ def path_levels(path)
 	return @hierarchy[0..(path.count-1)]
 end
 
+def add_level(level_name, level)
+	@levels[level_name] = level
+end
+
 # Return all fields that represent @level
 def fields_for_level(level)
-	return levels[level]
+	return @levels[level].fields
+end
+
+# Return name of key field for level @level
+def key_field_for_level(level)
+	return @levels[level].key_field
+end
+
+# Return description of a level. See {DimensionLevel}
+def level_description(level)
+	return @levels[level]
 end
 
 # Returns path in hierarchy which is one level higher than given path
@@ -234,6 +261,8 @@ def to_hash
 	
 	hash[:type] = :dimension
 	hash[:name] = @name
+
+	# FIXME: check
 	hash[:levels] = @levels
 	hash[:hierarchy] = @hierarchy
 	

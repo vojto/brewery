@@ -21,11 +21,11 @@
 require 'monitor'
 require 'pathname'
 
-begin
-	require 'curb'
-rescue
+#begin
+#	require 'curb'
+#rescue
 	# no curb
-end
+#end
 
 begin
 	require 'typhoeus'

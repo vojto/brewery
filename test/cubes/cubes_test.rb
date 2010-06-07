@@ -26,9 +26,13 @@ def define_dimensions
 	dim.dataset = dataset
 	dim.hierarchy = [:year, :month, :day]
 
-	dim.levels = { :year => [:year],
-		           :month => [:month, :month_name, :month_sname],
-			       :day => [:day] }
+	level = DimensionLevel.new( {:fields => [:year]} )
+	dim.add_level(:year, level)
+	level = DimensionLevel.new( {:fields => [:month, :month_name, :month_sname]} )
+	dim.add_level(:month, level)
+	level = DimensionLevel.new( {:fields => [:day]} )
+	dim.add_level(:day, level)
+
 	@date_dimension = dim
 	
 	dataset = Dataset.dataset_from_database_table(@connection[:dm_category])
@@ -36,7 +40,9 @@ def define_dimensions
 	dim.dataset = dataset
 	dim.hierarchy = [:category]
 
-	dim.levels = { :category => [:category_code, :category] }
+	level = DimensionLevel.new( {:fields => [:category_code, :category]} )
+	dim.add_level(:category, level)
+
 	@category_dimension = dim
 
 	# Add dimensions to workspace

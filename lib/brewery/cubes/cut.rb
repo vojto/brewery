@@ -48,10 +48,9 @@ def sql_condition(dimension, dimension_alias)
 	level = 0
 
 	path.each { |level_value|
-		# FIXME: handle other level values, such as: ranges, lists, ...
 		if level_value != :all
 			level_name = dimension.hierarchy[level]
-			level_column = dimension.levels[level_name][0]
+			level_column = dimension.key_field_for_level(level_name)
 			quoted_value = quote_value(level_value)
 
 			conditions << "#{dimension_alias}.#{level_column} = #{quoted_value}"	

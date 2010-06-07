@@ -5,7 +5,6 @@
 # Author:: Stefan Urbanek
 # Date:: May 2010
 #
-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -20,11 +19,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 require 'rubygems'
-require 'brewery/core/repository_manager'
 require 'brewery/core/class_additions'
 require 'brewery/core/string_additions'
 require 'brewery/core/hierarchy_tree'
 require 'brewery/core/dataset'
+require 'brewery/core/data_store_manager'
 
 require 'brewery/core/downloader'
 require 'brewery/core/download_batch'
@@ -33,9 +32,6 @@ require 'brewery/core/download_manager'
 # ETL
 require 'sequel'
 require 'dm-core'
-
-require 'brewery/core/data_store_manager'
-require 'brewery/core/class_additions'
 
 require 'brewery/etl/etl_job_bundle'
 require 'brewery/etl/etl_job'
@@ -48,12 +44,16 @@ require 'brewery/quality/quality_auditor'
 # Cubes
 require 'brewery/cubes/cube.rb'
 require 'brewery/cubes/dimension.rb'
+require 'brewery/cubes/dimension_level.rb'
 require 'brewery/cubes/slice.rb'
 require 'brewery/cubes/cut.rb'
 require 'brewery/cubes/workspace.rb'
 
 # require 'brewery-streams'
 
+# == Boom:
+# This is module description. An another sentence.
+# @author boo
 module Brewery
 
 @@default_configuration_files = [

@@ -1,4 +1,5 @@
-require 'test/unit/testsuite'
+# require 'test/unit/testsuite'
+require 'test/unit'
 require 'cubes_test'
 
 class TS_BreweryCubesTests
