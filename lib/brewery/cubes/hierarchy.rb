@@ -3,7 +3,7 @@ module Brewery
 class HierarchyLevel
     include DataMapper::Resource
 
-    property       :id, Serial
+    property       :id,    Serial
     property       :order, Integer
 
     belongs_to     :hierarchy
@@ -22,12 +22,15 @@ class Hierarchy
 
 def levels=(array)
     self.hierarchy_levels.destroy
-    
+
     array.each_index { |i|
         obj = array[i]
         
         if obj.class == String || obj.class == Symbol
             level = dimension.levels(:name => obj.to_s).first
+            if !level
+                raise RuntimeError, "Level '#{obj.to_s}' does not exist in hierarchy '#{name}' of dimension '#{dimension.name}'"
+            end
         else        
             level = obj
         end

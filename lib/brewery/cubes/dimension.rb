@@ -29,12 +29,14 @@ class Dimension
 	property :name, String
 	property :label, String
 	# property :hierarchy, CommaSeparatedList
-	property :description, String
-	property :key_field, String
+	property :description, Text
+	property :key_field, String, {:default => "id"}
+	property :table, String
 	property :default_hierarchy_name, String
 
     has n, :levels, { :model => DimensionLevel }
 	has n, :hierarchies #, {:through=>DataMapper::Resource} # default hierarchy
+    has n, :models,  {:through=>DataMapper::Resource}
 
 # Dimension label
 # @todo Make localizable
@@ -59,31 +61,51 @@ def self.new_from_file(path)
 	if !hash
 		return nil
 	end
-	return self.new(hash)
+	return self.new_from_hash(hash)
 end
 
 def self.new_from_hash(from_hash)
 	
-	hash = Hash.new
-	# rehash
-	from_hash.keys.each { |key|
-		hash[key.to_sym] = from_hash[key]
-	}
-	
+	hash = from_hash.hash_by_symbolising_keys
+
 	dim = Dimension.new
+	dim.name = hash[:name]
 	dim.label = hash[:label]
 	dim.description = hash[:description]
-	levels = hash[:levels]
-	if levels
-		levels.keys.each { |key|
-			level_hash = levels[key]
-			level = DimensionLevel.new(level_hash)
-			dim.add_level(key.to_sym, level)
+	dim.table = hash[:table]
+
+	new_levels = hash[:levels]
+	if new_levels.class != Hash
+	    raise RuntimeError, "Hierarchy levels in hash/file should be a hash"
+	end
+	
+	if new_levels
+    	new_levels = new_levels.hash_by_symbolising_keys
+		new_levels.each { |level_name, level_info|
+		    # puts "READING LEVEL #{level_name}"
+			level_info = level_info.hash_by_symbolising_keys
+			level = DimensionLevel.new
+			level.label = level_info[:label]
+            # puts "FIELDS: #{level_info[:fields]}"
+			level.level_fields = level_info[:fields]
+			level.name = level_name
+			dim.levels << level
 		}
 	end
 	
-	h = hash[:hierarchy].collect { |field| field.to_sym }
-	dim.hierarchy = h
+	dim.save
+	
+	hiers = hash[:hierarchies]
+
+	if hiers
+    	hiers = hiers.hash_by_symbolising_keys
+        hiers.each { |hier_name, hier_info|
+            hier_info = hier_info.hash_by_symbolising_keys
+            hier = dim.create_hierarchy(hier_name)
+            hier.levels = hier_info[:levels]
+            hier.save
+        }
+    end
 	
 	return dim
 end
@@ -195,7 +217,7 @@ end
 def key_for_path(path)
 	level_index = 0
 	conditions = Array.new
-
+    # puts "==> GET KEY FOR PATH: #{path}"
     hierarchy = default_hierarchy
     levels = hierarchy.levels
     
@@ -221,7 +243,7 @@ def key_for_path(path)
 	
 	# FIXME: limit selected columns (do not select all, only those required by level)
     if key_field
-    	key = key_field
+    	key = key_field.to_sym
 	else
 	    key = :id
 	end
@@ -229,8 +251,8 @@ def key_for_path(path)
 
 	data = data.clone(:order => [key])
 	data = data.clone(:select => fields)
-	#puts "==> SQL: #{data.sql}"
-	#puts "--- fields: #{fields}"
+	# puts "==> SQL: #{data.sql}"
+	# puts "--- fields: #{fields}"
 	first = data.first
 	if first
 		return first[key]
@@ -275,6 +297,8 @@ def fields_for_level(level_name)
 	level = levels.first( :name => level_name )
 	if level
 		return level.level_fields
+    else
+        raise "Level '#{level_name}' does not exist in dimension '#{name}'"
 	end
 	return nil
 end

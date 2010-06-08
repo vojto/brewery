@@ -67,7 +67,7 @@ end
 # @see Cut#initialize
 # @return [Slice] new slice with added cut
 def cut_by_point(dimension, path)
-	return self.cut_by(Cut.point_cut(dimension, path))
+	return self.cut_by(Cut.point_cut(@cube.dimension_object(dimension), path))
 end
 
 # Cut slice by ordered dimension from point specified by dimension
@@ -75,7 +75,7 @@ end
 # @return [Slice] new slice with added cut
 # @param [Array] path Dimension point specified by array of values. See {Dimension}
 def cut_by_range(dimension, from_key, to_key)
-	return self.cut_by(Cut.range_cut(dimension, from_key, to_key))
+	return self.cut_by(Cut.range_cut(@cube.dimension_object(dimension), from_key, to_key))
 end
 
 
@@ -101,7 +101,7 @@ end
 #
 # @param [Symbol] measure Measure to be aggregated, for example: amount, price, ...
 # @param [Hash] options Options for more refined aggregation
-# @option options [Symbol] :row_dimension Dimension used for row grouping
+# @option options [Symbol, Dimension] :row_dimension Dimension used for row grouping
 # @option options [Array] :row_levels Group by dimension levels
 # @option options [Symbol] :limit_type Possible values: ':value', `:percent`, `:rank`
 # @option options [Number] :limit Limit value based on limit_type 
@@ -112,18 +112,16 @@ end
 #   If no row dimension is specified, only one summary row is returned.
 # @todo implement limits
 def aggregate(measure, options = {})
-	row_dimension_name = options[:row_dimension]
-	row_dimension = @cube.workspace.dimension(row_dimension_name)
+	row_dimension = @cube.dimension_object(options[:row_dimension])
+
 	row_levels = options[:row_levels]
 	
 	if row_levels && row_levels.class != Array
 		raise RuntimeError, "Row levels should be an array"
 	end
-	if row_dimension_name && row_dimension_name.class != Symbol && row_dimension_name.class != String
-		raise RuntimeError, "Row dimension should be name as String or Symbol"
-	end	
-	if row_dimension_name && !row_dimension
-		raise RuntimeError, "Unknown dimension #{row_dimension_name} (does not exist in workspace)"
+
+	if options[:row_dimension] && !row_dimension
+		raise RuntimeError, "Unknown dimension #{options[:row_dimension]} (possibly not joined to cube)"
 	end
 	
 	table_alias = "t"
@@ -137,7 +135,7 @@ def aggregate(measure, options = {})
 	dims = @cuts.collect { |cut| cut.dimension }
 	all_dimensions.concat(dims)
 	if row_dimension
-		all_dimensions << row_dimension_name
+		all_dimensions << row_dimension
 	end
 	
 	all_dimensions = all_dimensions.uniq
@@ -152,7 +150,7 @@ def aggregate(measure, options = {})
         i += 1
     }
 
-	row_dimension_alias = dimension_aliases[row_dimension_name]
+	row_dimension_alias = dimension_aliases[row_dimension]
 
     ################################################
 	# 1. What needs to be SELECTed
@@ -186,9 +184,10 @@ def aggregate(measure, options = {})
 	filters = Array.new
 	
 	@cuts.each { |cut|
-		dim_alias = dimension_aliases[cut.dimension]
-		dimension = @cube.workspace.dimension(cut.dimension)
-		# puts "==> WHERE COND #{dimension} #{dim_alias}"
+	    # puts "CUT #{cut.class}"
+		dimension = @cube.dimension_object(cut.dimension)
+		dim_alias = dimension_aliases[dimension]
+		# puts "==> WHERE COND CUT: #{cut.dimension} DIM: #{dimension} ALIAS: #{dim_alias}"
 		filters << cut.sql_condition(dimension, dim_alias)
 	}
 
@@ -214,13 +213,13 @@ def aggregate(measure, options = {})
 
 	joins = Array.new
 
-	all_dimensions.each { |dim_name|
-		dim_alias = dimension_aliases[dim_name]
-		dimension = @cube.dimension(dim_name)
-        join_info = @cube.dimension_join_info(dim_name)
+	all_dimensions.each { |dimension|
+		dim_alias = dimension_aliases[dimension]
+        join_info = @cube.dimension_join_info(dimension)
+        # puts "JOIN FOR DIM: #{dimension}(#{dimension.class}): #{join_info}"
 
         joins << dimension.sql_join_expression(join_info[:dimension_key],
-                                               join_info[:table_key],
+                                               join_info[:fact_key],
                                                dim_alias, table_alias)
 	}
 
@@ -263,8 +262,9 @@ def aggregate(measure, options = {})
     ################################################
 	# 6. Execute statement
 
-	# puts "SEEQL: #{statement}"
+	# puts "SQL: #{statement}"
     selection = @cube.dataset.connection[statement]
+	# puts "SQL: #{selection.sql}"
 
     ################################################
 	# 7. Collect results

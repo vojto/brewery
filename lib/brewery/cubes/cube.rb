@@ -17,7 +17,7 @@ def initialize
 	@joins = Hash.new
 	@whole = Slice.new(self)
 	
-	@workspace = Workspace.default_workspace
+	# @workspace = Workspace.default_workspace
 end
 
 def dataset=(dataset)
@@ -31,35 +31,37 @@ end
 # Join dimension to cube
 #
 # == Parameters:
-# dimension_name::
-#   Name (as symbol) of dimension related to cube.
-# dimension_key_field::
-#   Name of key field in dimension dataset to be used on join with cube dataset.
-# table_key_field::
+# dimension::
+#   Dimension to be joined.
+# fact_key_field::
 #   Name of key field in cube dataset/table to be used on join with dimension.
 #
-def join_dimension(dimension_name, table_key_field, dimension_key_field)
-	if !@workspace.dimension(dimension_name)
-		raise RuntimeError, "Dimension #{dimension_name} does not exist in workspace"
+def join_dimension(dimension, fact_key_field)
+	if !dimension
+		raise RuntimeError, "Dimension shoul not be nil"
 	end
 	
-	@joined_dimensions[dimension_name] = { 
-							        :dimension_key => dimension_key_field,
-							        :table_key => table_key_field}
+	@joined_dimensions[dimension] = { 
+							        :dimension_key => dimension.key_field,
+							        :fact_key => fact_key_field}
 end
 
 # Provide dimension join information
-def dimension_join_info(dimension_name)
-	return @joined_dimensions[dimension_name]
+def dimension_join_info(dimension)
+	return @joined_dimensions[dimension]
 end
 
-def dimension(dimension_name)
-	# FIXME: check existence of dimension and whether it is joined with cube
-	return @workspace.dimension(dimension_name)
-end
-
-def slice(dimension, cut_values)
-	return @whole.slice(dimension, cut_values)
+# Return dimension object. If dim is String or Hash then find named dimension.
+def dimension_object(dimension)
+	# puts "SEARCH DIM #{dimension.class}:#{dimension} (in #{joined_dimensions.keys.count} dims)"
+	if dimension.class == String || dimension.class == Symbol
+		obj = joined_dimensions.keys.detect { |dim| 
+							dim.name == dimension || dim.name == dimension.to_s
+						}
+		return obj
+	else
+		return dimension
+	end
 end
 
 end # class

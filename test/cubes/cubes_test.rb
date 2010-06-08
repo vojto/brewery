@@ -46,6 +46,7 @@ def define_dimensions
     dim = Dimension.new( { :name => :category ,
                            :levels => [ { :name => :category, :level_fields => [:category_code, :category] } ]
                            } )
+    dim.key_field = "category_code"
     dim.save
     hier = dim.create_hierarchy(:default)
     hier.levels = [:category]
@@ -78,9 +79,13 @@ def test_from_hash_and_file
     
     path = Pathname.new("model/date_dim.yml")
     dim = Dimension.new_from_file(path)
-    fields = dim.fields_for_level(:month)
+    
+    l = dim.levels.first( :name => "month" ).level_fields
+    
+    fields = dim.fields_for_level("month")
+    assert_not_nil(fields)
     assert_equal(["month", "month_name", "month_sname"], fields)
-    # assert_equal([:year, :month, :day], dim.hierarchy)
+    assert_equal(["year", "month", "day"], dim.default_hierarchy.level_names)
 end
 
 def create_date_dimension
@@ -181,8 +186,8 @@ end
 def create_cube
 	@cube = Cube.new
 	@cube.dataset = @product_dataset
-	@cube.join_dimension(:date, :date_id, :id)
-	@cube.join_dimension(:category, :category, :category_code)
+	@cube.join_dimension(@date_dimension, :date_id)
+	@cube.join_dimension(@category_dimension, :category)
 end
 
 def test_dimension

@@ -1,27 +1,27 @@
 name: date
 label: Dátum
+name: date
 levels:
-    -   
-        name: year
+    year:
         label: Rok
-        level_fields:
+        fields:
             - year
-    -
-        name: month
+    month:
         label: Mesiac
-        level_fields:
+        fields:
             - month
             - month_name
             - month_sname
-    -
-        name: day
+    day:
         label: Deň
-        level_fields:
+        fields:
             - day
             - week_day
             - week_day_name
             - week_day_sname
-#hierarchy:
-#    - year
-#    - month
-#    - day
+hierarchies:
+    default:
+        levels:
+            - year
+            - month
+            - day
