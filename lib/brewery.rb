@@ -21,6 +21,7 @@
 require 'rubygems'
 require 'brewery/core/class_additions'
 require 'brewery/core/string_additions'
+require 'brewery/core/hash_additions'
 require 'brewery/core/hierarchy_tree'
 require 'brewery/core/dataset'
 require 'brewery/core/data_store_manager'
@@ -32,6 +33,8 @@ require 'brewery/core/download_manager'
 # ETL
 require 'sequel'
 require 'dm-core'
+require 'dm-types'
+require 'dm-is-list'
 
 require 'brewery/etl/etl_job_bundle'
 require 'brewery/etl/etl_job'
@@ -48,6 +51,8 @@ require 'brewery/cubes/dimension_level.rb'
 require 'brewery/cubes/slice.rb'
 require 'brewery/cubes/cut.rb'
 require 'brewery/cubes/workspace.rb'
+require 'brewery/cubes/model.rb'
+require 'brewery/cubes/hierarchy.rb'
 
 # require 'brewery-streams'
 

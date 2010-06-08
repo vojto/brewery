@@ -1,22 +1,24 @@
 module Brewery
 
-class DimensionLevel
-attr_accessor :name
-attr_accessor :fields
-attr_accessor :label
-attr_accessor :field_labels
+#class DimensionLevelField
+#    include DataMapper::Resource
+#    property :id, Serial
+#    property :name, String
+#end
 
-def initialize(hash = {})
-    # FIXME: check types and validity
-    # FIXME: convert to symbols
-    @fields = hash[:fields]
-    @label = hash[:label]
-    @field_labels = hash[:field_labels]
-    @name = hash[:name]
-end
+class DimensionLevel
+include DataMapper::Resource
+    property :id, Serial
+    property :name, String
+    property :level_fields, CommaSeparatedList, :length => 250
+    property :label, String
+    
+    belongs_to    :dimension
+    has        n, :hierarchy_levels
+#    has        n, :hierarchy_levels, :through => Resource
 
 def key_field
-    return fields[0]
+    return level_fields[0]
 end
 
 end

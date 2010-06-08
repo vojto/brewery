@@ -6,6 +6,10 @@ class BreweryCubesTest < Test::Unit::TestCase
 include Brewery
 
 def setup
+    DataMapper.setup(:default, 'sqlite3::memory:')
+    DataMapper.auto_migrate!
+
+
 	manager = Brewery::data_store_manager
 	manager.add_data_store(:default, "sqlite::memory:")
 	# manager.add_data_store(:default, "postgres://localhost/sandbox")
@@ -22,26 +26,27 @@ end
 
 def define_dimensions
 	dataset = Dataset.dataset_from_database_table(@connection[:dm_date])
-	dim = Dimension.new
-	dim.dataset = dataset
-	dim.hierarchy = [:year, :month, :day]
+    dim = Dimension.new( { :name => :date ,
+                           :levels =>  [
+                                {:name => :year, :level_fields => [:year] },
+                                {:name => :month, :level_fields => [:month, :month_name, :month_sname]},
+                                {:name => :day, :level_fields => [:day, :week_day, :week_day_name, :week_day_sname]}
+                            ]
+                            } 
+                        )
 
-	level = DimensionLevel.new( {:fields => [:year]} )
-	dim.add_level(:year, level)
-	level = DimensionLevel.new( {:fields => [:month, :month_name, :month_sname]} )
-	dim.add_level(:month, level)
-	level = DimensionLevel.new( {:fields => [:day]} )
-	dim.add_level(:day, level)
+    dim.save
+    hier = dim.create_hierarchy(:othe)
+    hier.levels = [:year, :month, :day]
+    hier.save
 
 	@date_dimension = dim
 	
 	dataset = Dataset.dataset_from_database_table(@connection[:dm_category])
-	dim = Dimension.new
+    dim = Dimension.new( { :name => :category ,
+                           :levels => [ { :name => :category, :level_fields => [:category_code, :category] } ]
+                           } )
 	dim.dataset = dataset
-	dim.hierarchy = [:category]
-
-	level = DimensionLevel.new( {:fields => [:category_code, :category]} )
-	dim.add_level(:category, level)
 
 	@category_dimension = dim
 
@@ -49,6 +54,29 @@ def define_dimensions
 	ws = Workspace.default_workspace
 	ws.add_dimension(:date, @date_dimension)
 	ws.add_dimension(:category, @category_dimension)
+end
+
+def test_from_hash_and_file
+    hash = 
+        {
+            :name => "date",
+            :levels => [
+                { :name => :year,  :level_fields => [:year] },
+                { :name => :month, :level_fields => [:month, :month_name, :month_sname]},
+                { :name => :day, :level_fields => [:day, :week_day, :week_day_name, :week_day_sname]}
+            ]
+        }
+    dim = Dimension.new(hash)
+    fields = dim.fields_for_level(:month)
+    assert_equal([:month, :month_name, :month_sname], fields)
+    # FIXME: TEST this
+    # assert_equal([:year, :month, :day], dim.default_hierarchy)
+    
+    path = Pathname.new("model/date_dim.yml")
+    dim = Dimension.new_from_file(path)
+    fields = dim.fields_for_level(:month)
+    assert_equal(["month", "month_name", "month_sname"], fields)
+    # assert_equal([:year, :month, :day], dim.hierarchy)
 end
 
 def create_date_dimension
@@ -157,13 +185,13 @@ def test_dimension
 	dim = @date_dimension
 
 	level = dim.drill_down_level(nil)
-	assert_equal(:year, level)
+	assert_equal("year", level.name)
 
 	level = dim.drill_down_level([2009, 10])
-	assert_equal(:day, level)
+	assert_equal("day", level.name)
 
 	level = dim.drill_down_level([2009, 10, 1])
-	assert_equal(:day, level)
+	assert_equal("day", level.name)
 	
 	path = dim.roll_up_path([2009, 10])
 	assert_equal([2009], path)
@@ -174,8 +202,8 @@ def test_dimension
 	assert_equal([], path)
 
 	assert_equal([], dim.path_levels([]))
-	assert_equal([:year], dim.path_levels([2009]))
-	assert_equal([:year, :month, :day], dim.path_levels([2009,10,1]))
+	assert_equal(["year"], dim.path_levels([2009]).collect { |l| l.name })
+	assert_equal(["year", "month", "day"], dim.path_levels([2009,10,1]).collect { |l| l.name })
 
 end
 

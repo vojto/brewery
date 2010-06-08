@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'sequel'
 require 'data_objects'
+require 'brewery/cubes/dimension_level'
 
 module Brewery
 
@@ -21,31 +22,53 @@ module Brewery
 #                 :month => [:month, :month_name, :month_sname],
 #                 :day => [:day, :weekday, :weekday_name] }
 class Dimension
-include DataObjects::Quoting
+	include DataObjects::Quoting
+	include DataMapper::Resource
+
+	property :id, Serial
+	property :name, String
+	property :label, String
+	# property :hierarchy, CommaSeparatedList
+	property :description, String
+	property :key_field, String
+	property :default_hierarchy_name, String
+
+    has n, :levels, { :model => DimensionLevel }
+	has n, :hierarchies #, {:through=>DataMapper::Resource} # default hierarchy
 
 # Dimension label
 # @todo Make localizable
-attr_accessor :label
+# attr_accessor :label
 
 # Dimension hierarchy - array of field names that define hierarchy.
-attr_accessor :hierarchy
+# attr_accessor :hierarchy
 
 # Hash of hierarchy levels in the form: level => [fields]
 # attr_accessor :levels
 
 # More detailed description of the dimension
-attr_accessor :description
+# attr_accessor :description
 
 # Dataset (table) that contains dimension values
 attr_reader :dataset
 # Key field
 attr_accessor :key_field
 
-def self.dataset_from_file(path)
+def self.new_from_file(path)
 	hash = YAML.load_file(path)
 	if !hash
 		return nil
 	end
+	return self.new(hash)
+end
+
+def self.new_from_hash(from_hash)
+	
+	hash = Hash.new
+	# rehash
+	from_hash.keys.each { |key|
+		hash[key.to_sym] = from_hash[key]
+	}
 	
 	dim = Dimension.new
 	dim.label = hash[:label]
@@ -53,16 +76,45 @@ def self.dataset_from_file(path)
 	levels = hash[:levels]
 	if levels
 		levels.keys.each { |key|
-			level = levels[:key]
-#			...
+			level_hash = levels[key]
+			level = DimensionLevel.new(level_hash)
+			dim.add_level(key.to_sym, level)
 		}
 	end
+	
+	h = hash[:hierarchy].collect { |field| field.to_sym }
+	dim.hierarchy = h
+	
+	return dim
 end
 
-def initialize
-	@key_field = :id
-	@levels = Hash.new
+def create_hierarchy(name)
+    hier = Hierarchy.new( { :name => name } )
+    hierarchies << hier
+    hier.save
+    return hier
 end
+
+def default_hierarchy
+    hier = nil
+    name = default_hierarchy_name
+    if !name
+        name = :default
+    end
+    
+    hier = hierarchies( :name => name ).first
+
+    if !hier
+        hier = hierarchies.first
+    end
+    return hier
+end
+    
+
+# def initialize
+#	@key_field = :id
+# 	@levels = Hash.new
+#end
 
 def dataset=(dataset)
 	@dataset = dataset
@@ -138,17 +190,21 @@ end
 # Return dimension key for given path. If path is not complete, returns min key
 # for most matching path.
 def key_for_path(path)
-	level = 0
+	level_index = 0
 	conditions = Array.new
-	
+
+    hierarchy = default_hierarchy
+    levels = hierarchy.levels
+    
 	path.each { |level_value|
-		level_column = hierarchy[level]
+	    level = levels[level_index]
+		level_column = level.key_field
 		conditions << {:column =>level_column, :value => level_value}	
-		# puts "LEVEL #{level}: #{level_column} = #{level_value}"
-		level = level + 1
+		# puts "LEVEL #{level_index}: #{level_column} = #{level_value}"
+		level = level_index + 1
 	}
 
-	level_name = hierarchy[level-1]
+	level_name = levels[level_index-1].name
 	
 	# FIXME: this is valid only while there is only Sequel implementatin of datasets
 	data = @dataset.table
@@ -180,25 +236,26 @@ end
 def drill_down_level(path)
 	# FIXME: check validity of path
 	# validate_path(path)
-	
-	if !path
-		return @hierarchy[0]
+
+	hier = default_hierarchy
+	if !path || path.empty?
+		return hier.levels[0]
 	end
 	
 	next_level = path.count
-	if next_level >= @hierarchy.count
-		return @hierarchy.last
+	if next_level >= hier.levels.count
+		return hier.levels.last
 	end
 	
-	return @hierarchy[next_level]
+	return hier.levels[next_level]
 end
 
 def path_levels(path)
 	if !path || path.count == 0
 		return []
 	end
-	
-	return @hierarchy[0..(path.count-1)]
+    hierarchy = default_hierarchy
+	return hierarchy.levels[0..(path.count-1)]
 end
 
 def add_level(level_name, level)
@@ -206,8 +263,12 @@ def add_level(level_name, level)
 end
 
 # Return all fields that represent @level
-def fields_for_level(level)
-	return @levels[level].fields
+def fields_for_level(level_name)
+	level = levels.first( :name => level_name )
+	if level
+		return level.level_fields
+	end
+	return nil
 end
 
 # Return name of key field for level @level
