@@ -30,22 +30,26 @@ def define_dimensions
                            :levels =>  [
                                 {:name => :year, :level_fields => [:year] },
                                 {:name => :month, :level_fields => [:month, :month_name, :month_sname]},
-                                {:name => :day, :level_fields => [:day, :week_day, :week_day_name, :week_day_sname]}
+                                {:name => :day, :level_fields => [:day, :week_day]}
                             ]
                             } 
                         )
 
     dim.save
-    hier = dim.create_hierarchy(:othe)
+    hier = dim.create_hierarchy(:default)
     hier.levels = [:year, :month, :day]
     hier.save
-
+    dim.dataset = dataset
 	@date_dimension = dim
 	
 	dataset = Dataset.dataset_from_database_table(@connection[:dm_category])
     dim = Dimension.new( { :name => :category ,
                            :levels => [ { :name => :category, :level_fields => [:category_code, :category] } ]
                            } )
+    dim.save
+    hier = dim.create_hierarchy(:default)
+    hier.levels = [:category]
+    hier.save
 	dim.dataset = dataset
 
 	@category_dimension = dim

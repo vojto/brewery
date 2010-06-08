@@ -45,17 +45,24 @@ attr_accessor :path
 # @api private
 def sql_condition(dimension, dimension_alias)
 	conditions = Array.new
-	level = 0
+	level_index = 0
+
+    #FIXME: use more
+    hier = dimension.default_hierarchy
+
+    if !hier
+        raise RuntimeError, "Dimension has no hierarchy"
+    end
 
 	path.each { |level_value|
 		if level_value != :all
-			level_name = dimension.hierarchy[level]
-			level_column = dimension.key_field_for_level(level_name)
+			level = hier.levels[level_index]
+			level_column = level.key_field
 			quoted_value = quote_value(level_value)
 
 			conditions << "#{dimension_alias}.#{level_column} = #{quoted_value}"	
 		end
-		level = level + 1
+		level_index = level_index + 1
 	}
 	
 	cond_expression = conditions.join(" AND ")
@@ -70,6 +77,9 @@ attr_accessor :to_key
 # @api private
 def sql_condition(dimension, dimension_alias)
     dimension_key = dimension.key_field
+    if !dimension_key
+        dimension_key = :id
+    end
     condition = "#{dimension_alias}.#{dimension_key} BETWEEN #{from_key} AND #{to_key}"	
 	return condition
 end

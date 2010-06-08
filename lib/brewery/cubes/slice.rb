@@ -188,6 +188,7 @@ def aggregate(measure, options = {})
 	@cuts.each { |cut|
 		dim_alias = dimension_aliases[cut.dimension]
 		dimension = @cube.workspace.dimension(cut.dimension)
+		# puts "==> WHERE COND #{dimension} #{dim_alias}"
 		filters << cut.sql_condition(dimension, dim_alias)
 	}
 
@@ -262,7 +263,7 @@ def aggregate(measure, options = {})
     ################################################
 	# 6. Execute statement
 
-	# puts "#{statement}"
+	# puts "SEEQL: #{statement}"
     selection = @cube.dataset.connection[statement]
 
     ################################################

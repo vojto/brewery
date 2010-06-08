@@ -142,18 +142,19 @@ def drill_down_values(path)
 	# 2009 -> all months
 	# 2009, 2 -> all days
 	# 2009, :all -> all days for all months
-	level = 0
+	level_index = 0
 	conditions = Array.new
 	
 	path.each { |level_value|
-		level_column = hierarchy[level]
-		conditions << {:column =>level_column, :value => level_value}	
+    	level = default_hierarchy.levels[level_index]
+	
+		conditions << {:column =>level.key_field.to_sym, :value => level_value}	
 		# puts "LEVEL #{level}: #{level_column} = #{level_value}"
-		level = level + 1
+		level_index += 1
 	}
 
-	level_name = hierarchy[level]
-	
+	level = default_hierarchy.levels[level_index]
+
 	# FIXME: this is valid only while there is only Sequel implementatin of datasets
 	data = @dataset.table
 	
@@ -167,13 +168,15 @@ def drill_down_values(path)
 	
 	# FIXME: limit selected columns (do not select all, only those required by level)
 
-	level_fields = fields_for_level(level_name)
+    level_fields = level.level_fields.collect {|f| f.to_sym }
+	level_key = level.key_field.to_sym
 	#str = level_fields.collect{|f| f.to_s.lit}.join(',')
 	# data = data.group(level_fields).order(level_fields)
-	data = data.clone(:group => level_fields)
-	data = data.clone(:order => level_fields)
+	data = data.clone(:group => [level_key])
+	data = data.clone(:order => [level_key])
 	data = data.clone(:select => level_fields)
-	# puts "SQL: #{data.sql}"
+    # puts "==> PATH: #{path}"
+	# puts "--- SQL: #{data.sql}"
 	data.each { |row|
 		record = Hash.new
 		level_fields.each { |field|
@@ -197,11 +200,10 @@ def key_for_path(path)
     levels = hierarchy.levels
     
 	path.each { |level_value|
-	    level = levels[level_index]
-		level_column = level.key_field
+		level_column = levels[level_index].key_field.to_sym
 		conditions << {:column =>level_column, :value => level_value}	
 		# puts "LEVEL #{level_index}: #{level_column} = #{level_value}"
-		level = level_index + 1
+		level_index = level_index + 1
 	}
 
 	level_name = levels[level_index-1].name
@@ -218,14 +220,20 @@ def key_for_path(path)
 	values = Array.new
 	
 	# FIXME: limit selected columns (do not select all, only those required by level)
-	fields = [@key_field]
-	fields.concat(fields_for_level(level_name))
+    if key_field
+    	key = key_field
+	else
+	    key = :id
+	end
+	fields = [key].concat(fields_for_level(level_name))
 
-	data = data.clone(:order => [@key_field])
+	data = data.clone(:order => [key])
 	data = data.clone(:select => fields)
+	#puts "==> SQL: #{data.sql}"
+	#puts "--- fields: #{fields}"
 	first = data.first
 	if first
-		return first[@key_field]
+		return first[key]
 	else
 		return nil
 	end
