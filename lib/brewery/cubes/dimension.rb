@@ -28,7 +28,6 @@ class Dimension
 	property :id, Serial
 	property :name, String
 	property :label, String
-	# property :hierarchy, CommaSeparatedList
 	property :description, Text
 	property :key_field, String, {:default => "id"}
 	property :table, String
@@ -37,6 +36,9 @@ class Dimension
     has n, :levels, { :model => DimensionLevel }
 	has n, :hierarchies #, {:through=>DataMapper::Resource} # default hierarchy
     has n, :models,  {:through=>DataMapper::Resource}
+
+    has n, :cubes, :through => :cube_dimension_joins
+    has n, :cube_dimension_joins
 
 # Dimension label
 # @todo Make localizable
@@ -140,6 +142,7 @@ end
 
 def dataset=(dataset)
 	@dataset = dataset
+	self.table = dataset.table_name
 end
 
 # Returns values of hierarchy level which follows the last level in given path.
@@ -340,7 +343,7 @@ end
 # FIXME: temporary SQL functions
 def sql_join_expression(dimension_field, fact_field, dimension_alias, table_alias)
 	# FIXME: may cause issues with schemas
-	table_name = dataset.table_name
+	table_name = table
 
 	join_expression = "JOIN #{table_name} #{dimension_alias} " +
 						"ON (#{dimension_alias}.#{dimension_field} = #{table_alias}.#{fact_field})"

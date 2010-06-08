@@ -19,6 +19,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 require 'rubygems'
+require 'sequel'
+require 'dm-core'
+require 'dm-types'
+require 'dm-is-list'
+require 'data_objects'
+
 require 'brewery/core/class_additions'
 require 'brewery/core/string_additions'
 require 'brewery/core/hash_additions'
@@ -31,10 +37,6 @@ require 'brewery/core/download_batch'
 require 'brewery/core/download_manager'
 
 # ETL
-require 'sequel'
-require 'dm-core'
-require 'dm-types'
-require 'dm-is-list'
 
 require 'brewery/etl/etl_job_bundle'
 require 'brewery/etl/etl_job'
@@ -48,6 +50,7 @@ require 'brewery/quality/quality_auditor'
 require 'brewery/cubes/cube.rb'
 require 'brewery/cubes/dimension.rb'
 require 'brewery/cubes/dimension_level.rb'
+require 'brewery/cubes/cube_dimension_join.rb'
 require 'brewery/cubes/slice.rb'
 require 'brewery/cubes/cut.rb'
 require 'brewery/cubes/workspace.rb'

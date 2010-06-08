@@ -188,6 +188,7 @@ def create_cube
 	@cube.dataset = @product_dataset
 	@cube.join_dimension(@date_dimension, :date_id)
 	@cube.join_dimension(@category_dimension, :category)
+	@cube.fact_table = :ft_product
 end
 
 def test_dimension

@@ -15,7 +15,6 @@ include DataMapper::Resource
     
     belongs_to    :dimension
     has        n, :hierarchy_levels
-#    has        n, :hierarchy_levels, :through => Resource
 
 def key_field
     return level_fields[0]

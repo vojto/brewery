@@ -112,8 +112,10 @@ end
 #   If no row dimension is specified, only one summary row is returned.
 # @todo implement limits
 def aggregate(measure, options = {})
-	row_dimension = @cube.dimension_object(options[:row_dimension])
-
+    if options[:row_dimension]
+    	row_dimension = @cube.dimension_object(options[:row_dimension])
+    end
+    
 	row_levels = options[:row_levels]
 	
 	if row_levels && row_levels.class != Array
@@ -185,7 +187,13 @@ def aggregate(measure, options = {})
 	
 	@cuts.each { |cut|
 	    # puts "CUT #{cut.class}"
+		if !cut.dimension
+		    raise RuntimeError, "No dimension in cut (#{cut.class}), slicing cube '#{@cube.name}'"
+		end
 		dimension = @cube.dimension_object(cut.dimension)
+		if !dimension
+		    raise RuntimeError, "No cut dimension '#{cut.dimension.name}' in cube '#{@cube.name}'"
+		end
 		dim_alias = dimension_aliases[dimension]
 		# puts "==> WHERE COND CUT: #{cut.dimension} DIM: #{dimension} ALIAS: #{dim_alias}"
 		filters << cut.sql_condition(dimension, dim_alias)
@@ -215,11 +223,11 @@ def aggregate(measure, options = {})
 
 	all_dimensions.each { |dimension|
 		dim_alias = dimension_aliases[dimension]
-        join_info = @cube.dimension_join_info(dimension)
-        # puts "JOIN FOR DIM: #{dimension}(#{dimension.class}): #{join_info}"
+        join = @cube.join_for_dimension(dimension)
+        # puts "JOIN FOR DIM: '#{dim_alias}' #{dimension}(#{dimension.class}): #{join.fact_key}=#{join.dimension_key}"
 
-        joins << dimension.sql_join_expression(join_info[:dimension_key],
-                                               join_info[:fact_key],
+        joins << dimension.sql_join_expression(join.dimension_key,
+                                               join.fact_key,
                                                dim_alias, table_alias)
 	}
 
@@ -251,7 +259,11 @@ def aggregate(measure, options = {})
 		sort_expr = ''
 	end
 
-	table_name = @cube.dataset.table_name
+	table_name = @cube.fact_table
+	if !table_name
+	    raise RuntimeError, "No fact table name specified for cube '#{@cube.name}'"
+	end
+	
 	statement = "SELECT #{select_expr}
 				FROM #{table_name} #{table_alias}
 				#{join_expr}
@@ -263,6 +275,10 @@ def aggregate(measure, options = {})
 	# 6. Execute statement
 
 	# puts "SQL: #{statement}"
+    if !@cube.dataset
+        raise RuntimeError, "No dataset set for cube '#{@cube.name}'"
+    end
+    
     selection = @cube.dataset.connection[statement]
 	# puts "SQL: #{selection.sql}"
 
@@ -287,7 +303,7 @@ def aggregate(measure, options = {})
 
 		# Collect fields from dimension levels
         row_fields.each { |field|
-            result_row[field] = record[field]
+            result_row[field.to_sym] = record[field.to_sym]
         }
 
         value = record[:record_count]
