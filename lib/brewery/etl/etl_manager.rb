@@ -32,18 +32,6 @@ attr_reader :log
 attr_reader :etl_files
 attr_accessor :debug
 
-cattr_reader :schedules_table_name
-cattr_reader :defaults_table_name
-cattr_reader :job_status_table_name
-cattr_reader :system_table_names
-
-@@schedules_table_name = :etl_schedules
-@@defaults_table_name = :etl_defaults
-@@job_status_table_name = :etl_job_status
-@@system_table_names = 	[ @@schedules_table_name,
-					   @@defaults_table_name,
-					   @@job_status_table_name ]
-
 def initialize(connection)
 	# FIXME: use brewery_etl
 	DataMapper.setup(:default, connection)

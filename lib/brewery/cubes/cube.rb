@@ -66,17 +66,23 @@ end
 
 # Return dimension object. If dim is String or Hash then find named dimension.
 def dimension_object(dimension)
-	# puts "SEARCH DIM #{dimension.class}:#{dimension} (in #{joined_dimensions.keys.count} dims)"
-	if dimension.class == String || dimension.class == Symbol
+    case dimension
+    when String, Symbol
 		obj = dimensions.first( :name => dimension )
-	else
+    when Dimension
 		obj = dimension
-	end
+    else
+        assert_kind_of "dimension", dimension, Dimension, String, Symbol
+    end
 
 	if !obj
 		raise RuntimeError, "Cube '#{self.name}' has no joined dimension '#{dimension}'"
 	end
 	return obj
+end
+
+def dimension_with_name(dimension)
+	return dimensions.first( :name => dimension )
 end
 
 end # class

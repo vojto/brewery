@@ -149,7 +149,7 @@ end
 #
 # == Example:
 # @example Get all months:
-#   date_dimension.drill_down_values([2009])
+#   date_dimension.list_of_values([2009])
 #   # Result:
 #   { :month => 1, :month_name => "January", :month_short_name => "Jan" }
 #   { :month => 2, :month_name => "February", :month_short_name => "Feb" }
@@ -163,7 +163,7 @@ end
 # == Returns:
 # Array of records as hashes.
 #
-def drill_down_values(path)
+def list_of_values(path)
 	# 2009 -> all months
 	# 2009, 2 -> all days
 	# 2009, :all -> all days for all months
@@ -291,13 +291,17 @@ def path_levels(path)
 	return hierarchy.levels[0..(path.count-1)]
 end
 
-def add_level(level_name, level)
-	@levels[level_name] = level
-end
-
 # Return all fields that represent @level
-def fields_for_level(level_name)
-	level = levels.first( :name => level_name )
+def fields_for_level(level)
+    case level#.class
+    when String, Symbol
+    	level = level_with_name(level)
+    when DimensionLevel
+        # nothing, we are OK
+    else
+        assert_kind_of "level", level, DimensionLevel, String, Symbol
+    end
+    
 	if level
 		return level.level_fields
     else
@@ -308,12 +312,21 @@ end
 
 # Return name of key field for level @level
 def key_field_for_level(level)
-	return @levels[level].key_field
+    case level#.class
+    when String, Symbol
+    	level = level_with_name(level)
+    when DimensionLevel
+        # nothing, we are OK
+    else
+        assert_kind_of "level", level, DimensionLevel, String, Symbol
+    end
+
+	return level.key_field
 end
 
-# Return description of a level. See {DimensionLevel}
-def level_description(level)
-	return @levels[level]
+# Return a level with given name. See {DimensionLevel}
+def level_with_name(level_name)
+	return levels.first( :name => level_name )
 end
 
 # Returns path in hierarchy which is one level higher than given path

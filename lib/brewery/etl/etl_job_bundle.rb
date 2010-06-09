@@ -28,10 +28,14 @@ attr_reader :job_class_name
 attr_reader :path
 
 attr_reader :is_loaded
-cattr_accessor :job_search_path
 
 @@named_bundles = nil
 @@job_search_path = []
+
+def self.job_search_path=(path)
+	# FIXME: validate
+	@@job_search_path = path
+end
 
 def self.path_for_job(name)
     @@job_search_path.each { |search_path|
@@ -84,7 +88,7 @@ def initialize(path)
 	# Just in case, so we are sure that we have Pathname object
 	@path = Pathname.new(path)
 	
-	basename = @path.basename
+	basename = @path.basename.to_s
 	@name = basename.to_s.gsub(/\.[^.]*$/, "")
 	
 	info_file = @path + 'info.yml'

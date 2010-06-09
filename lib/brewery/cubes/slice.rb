@@ -103,8 +103,9 @@ end
 # @param [Hash] options Options for more refined aggregation
 # @option options [Symbol, Dimension] :row_dimension Dimension used for row grouping
 # @option options [Array] :row_levels Group by dimension levels
-# @option options [Symbol] :limit_type Possible values: ':value', `:percent`, `:rank`
-# @option options [Number] :limit Limit value based on limit_type 
+# @option options [Symbol] :limit Possible values: ':value', `:percent`, `:rank`
+# @option options [Symbol] :limit_aggregation Which aggregation is used for determining limit
+# @option options [Number] :limit_value Limit value based on limit_type 
 # @option options [Symbol] :limit_sort Possible values: `:ascending`, `:descending`
 # == Examples:
 # * aggregate(:amount, { :row_dimension => [:date], :row_levels => [:year, :month]} )
@@ -112,6 +113,7 @@ end
 #   If no row dimension is specified, only one summary row is returned.
 # @todo implement limits
 def aggregate(measure, options = {})
+t = Time.now
     if options[:row_dimension]
     	row_dimension = @cube.dimension_object(options[:row_dimension])
     end
@@ -161,8 +163,12 @@ def aggregate(measure, options = {})
     # 1.1 Aggregations
 	
 	operators = [:sum, :average]
+    aggregated_fields = Hash.new
+    
 	for i in ( 0..(operators.count - 1) )
-        selections << sql_field_aggregate(measure, operators[i], "agg_#{i}")
+        field = "agg_#{i}"
+	    aggregated_fields[operators[i]] = field
+        selections << sql_field_aggregate(measure, operators[i], field)
     end
     
     # 1.2 Add total record count
@@ -279,11 +285,66 @@ def aggregate(measure, options = {})
         raise RuntimeError, "No dataset set for cube '#{@cube.name}'"
     end
     
+    limit = options[:limit]
+
+    if limit
+        limit_aggregation = options[:limit_aggregation]
+        limit_value = options[:limit_value]
+        limit_sort = options[:limit_sort]
+
+        case limit
+        when :rank
+            case limit_sort
+            when :ascending, :asc, :bottom
+                direction = "ASC"
+            when :descending, :desc, :top
+                direction = "DESC"
+            else
+                direction = "ASC"
+            end
+            if !limit_aggregation
+                limit_aggregation = :sum
+            else
+                limit_aggregation = limit_aggregation.to_sym
+            end
+            
+            agg_field = aggregated_fields[limit_aggregation]
+            if !agg_field
+                raise ArgumentError, "Invalid aggregation '#{limit_aggregation}' to limit"
+            end
+
+            if !limit_value
+                raise ArgumentError, "Limit value for aggregation rank limit not provided"
+            end
+            # FIXME: this is not portable
+            statement = "SELECT * FROM (#{statement}) s 
+                            ORDER BY s.#{agg_field} #{direction} LIMIT #{limit_value}"
+        when :percent
+            # FIXME: implement :percent limit
+            raise NotImplementedError, ":percent limit is not yet implemented"
+        when :value
+            # FIXME: implement :value limit
+            raise NotImplementedError, ":value limit is not yet implemented"
+            # "SELECT * FROM (#{statement}) WHERE #{agg_field} #{} LIMIT #{rank}"
+        end
+    end
+puts "==> ELAPSED SETUP: #{Time.now - t}"
+t = Time.now
+    
     selection = @cube.dataset.connection[statement]
-	# puts "SQL: #{selection.sql}"
+    puts "COUNT: #{selection.count}"
+	puts "SQL: #{selection.sql}"
+
+    # @option options [Symbol] :limit_type Possible values: ':value', `:percent`, `:rank`
+    # @option options [Symbol] :limit_aggregation Which aggregation is used for determining limit
+    # @option options [Number] :limit Limit value based on limit_type 
+    # @option options [Symbol] :limit_sort Possible values: `:ascending`, `:descending`
+
+puts "==> ELAPSED EXEC: #{Time.now - t}"
 
     ################################################
 	# 7. Collect results
+t = Time.now
 
     results = Array.new
     selection.each { |record|
@@ -314,6 +375,7 @@ def aggregate(measure, options = {})
 
         results << result_row
     }
+puts "==> ELAPSED COLLECT: #{Time.now - t}"
 
     return results
 end
