@@ -220,14 +220,14 @@ end
 def test_date_dimension
 	dim = @date_dimension
 
-	years = dim.drill_down_values([])
+	years = dim.list_of_values([])
 	assert_equal([2009, 2010, 2011, 2012], years.collect {|r| r[:year] })
 
-	months2009 = dim.drill_down_values([2009]).collect {|r| r[:month] }
-	months2010 = dim.drill_down_values([2010]).collect {|r| r[:month] }
-	months2011 = dim.drill_down_values([2010]).collect {|r| r[:month] }
-	months2012 = dim.drill_down_values([2012]).collect {|r| r[:month] }
-	months_any = dim.drill_down_values([:all]).collect {|r| r[:month] }
+	months2009 = dim.list_of_values([2009]).collect {|r| r[:month] }
+	months2010 = dim.list_of_values([2010]).collect {|r| r[:month] }
+	months2011 = dim.list_of_values([2010]).collect {|r| r[:month] }
+	months2012 = dim.list_of_values([2012]).collect {|r| r[:month] }
+	months_any = dim.list_of_values([:all]).collect {|r| r[:month] }
 	
 	assert_equal([6,7,8,9,10,11,12], months2009)
 	assert_equal(12, months2010.count)
@@ -235,16 +235,16 @@ def test_date_dimension
 	assert_equal(months2010, months_any)
 	assert_equal([1,2,3,4,5,6], months2012)
 
-	months2010 = dim.drill_down_values([2010])
+	months2010 = dim.list_of_values([2010])
 	assert_equal("January", months2010[0][:month_name])
 
- 	days_jan10 = dim.drill_down_values([2010, 1]).collect {|r| r[:day] }
+ 	days_jan10 = dim.list_of_values([2010, 1]).collect {|r| r[:day] }
 	assert_equal(31, days_jan10.count)
 
- 	days_jan = dim.drill_down_values([:all, 1]).collect {|r| r[:day] }
+ 	days_jan = dim.list_of_values([:all, 1]).collect {|r| r[:day] }
 	assert_equal(31, days_jan.count)
 
- 	all_days = dim.drill_down_values([:all, :all]).collect {|r| r[:day] }
+ 	all_days = dim.list_of_values([:all, :all]).collect {|r| r[:day] }
 	assert_equal(31, all_days.count)
 end
 
