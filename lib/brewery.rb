@@ -22,6 +22,7 @@ require 'rubygems'
 require 'sequel'
 require 'dm-core'
 require 'dm-types'
+require 'dm-migrations'
 require 'dm-is-list'
 require 'data_objects'
 
@@ -130,15 +131,42 @@ def self.configure_from_hash(config)
     files = config["data_store_files"]
 	if files.is_kind_of_class(Array)
 		files.each { |file|
-			DataSourceManager.default_manager.add_stores_in_file(file)
+			DataStoreManager.default_manager.add_stores_in_file(file)
 		}
 	elsif files
 		# FIXME: use log
 		puts 'Unknown data_store_files value type (should be array)'
 	end
 
+    data_store = config["brewery_data_store"]
+	if data_store.is_kind_of_class(String)
+		self.set_brewery_datastore(data_store)
+	elsif data_store
+		# FIXME: use log
+		puts 'Unknown brewery_data_store value type (should be array)'
+	end
+
 	@@configuration = config
 end
+
+def self.set_brewery_datastore(name)
+	datastore = DataStoreManager.default_manager.data_store(name)
+	if !datastore
+		raise "Datastore '#{name}' not found"
+	end
+	puts "SETTING DS: #{name}	"
+	DataMapper.setup(:default, datastore)
+end
+
+def self.initialize_brewery_datastore
+	# FIXME: this is destructive!
+	DataMapper.auto_migrate!
+end
+
+def self.upgrade_brewery_datastore
+	DataMapper.auto_upgrade!
+end
+
 
 def self.configuration
 	return @@configuration
