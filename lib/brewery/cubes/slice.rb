@@ -89,7 +89,7 @@ end
 # Remove all cuts by dimension from the receiver.
 def remove_cuts_by_dimension(dimension)
 	@cuts.delete_if { |cut|
-		cut.dimension == dimension
+		@cube.dimension_object(cut.dimension) == @cube.dimension_object(dimension)
 	}
 end
 
@@ -335,11 +335,6 @@ def aggregate(measure, options = {})
     selection = @cube.dataset.connection[statement]
     # puts "COUNT: #{selection.count}"
 	# puts "SQL: #{selection.sql}"
-
-    # @option options [Symbol] :limit_type Possible values: ':value', `:percent`, `:rank`
-    # @option options [Symbol] :limit_aggregation Which aggregation is used for determining limit
-    # @option options [Number] :limit Limit value based on limit_type 
-    # @option options [Symbol] :limit_sort Possible values: `:ascending`, `:descending`
 
 # puts "==> ELAPSED EXEC: #{Time.now - t}"
 

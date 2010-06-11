@@ -386,6 +386,10 @@ def to_hash
 	return hash
 end
 
+def self.date_key(date)
+    return date.strftime('%Y%m%d').to_i
+end
+
 def to_yaml
 	return self.to_hash.to_yaml
 end
