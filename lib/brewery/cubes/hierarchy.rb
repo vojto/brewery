@@ -22,6 +22,7 @@ class Hierarchy
 
 def levels=(array)
     self.hierarchy_levels.destroy
+    @levels = Array.new
 
     array.each_index { |i|
         obj = array[i]
@@ -39,6 +40,7 @@ def levels=(array)
         hl.order = i
         self.hierarchy_levels << hl
         level.hierarchy_levels << hl
+        @levels << level
     }
 end
 
@@ -47,8 +49,13 @@ def level_names
 end
 
 def levels
-    ordered = hierarchy_levels.all(:order => [ :order.asc ])
-    return ordered.collect { |level| level.dimension_level }
+    # FIXME: flush cache on attribute update
+    if !@levels
+        ordered = hierarchy_levels.all(:order => [ :order.asc ])
+        @levels = ordered.collect { |level| level.dimension_level }
+    end
+    
+    return @levels
 end
 
 end # class Hierarchy

@@ -15,7 +15,6 @@ class Cube
 
 # Dataset containing facts
 attr_reader :dataset
-attr_reader :joined_dimensions
 
 attr_accessor :workspace
 
@@ -61,14 +60,23 @@ end
 
 # Provide dimension join information
 def join_for_dimension(dimension)
-	return cube_dimension_joins.first( :dimension => dimension, :cube => self )
+    # FIXME: flush cache on attribute update
+	if !@cached_joins
+		@cached_joins = Hash.new
+	end
+	join = @cached_joins[dimension]
+	if !join
+		join = cube_dimension_joins.first( :dimension => dimension, :cube => self )
+		@cached_joins[dimension] = join
+	end
+	return join
 end
 
 # Return dimension object. If dim is String or Hash then find named dimension.
 def dimension_object(dimension)
     case dimension
     when String, Symbol
-		obj = dimensions.first( :name => dimension )
+		obj = dimension_with_name(dimension)
     when Dimension
 		obj = dimension
     else
@@ -81,8 +89,16 @@ def dimension_object(dimension)
 	return obj
 end
 
-def dimension_with_name(dimension)
-	return dimensions.first( :name => dimension )
+def dimension_with_name(name)
+	if !@cached_dimensions
+		@cached_dimensions = Hash.new
+	end
+	dim = @cached_dimensions[name]
+	if !dim
+		dim = dimensions.first( :name => name )
+		@cached_dimensions[name] = dim
+	end
+	return dim
 end
 
 end # class

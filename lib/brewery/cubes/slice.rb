@@ -49,7 +49,8 @@ end
 def initialize_copy(*)
   @cut_values = @cut_values.dup
   @cuts = @cuts.dup
-	
+  # FIXME: is this the right behaviour?
+  @computed_fields = nil
 end
 
 # Cut slice by provided cut
@@ -113,7 +114,7 @@ end
 #   If no row dimension is specified, only one summary row is returned.
 # @todo implement limits
 def aggregate(measure, options = {})
-t = Time.now
+# t = Time.now
     if options[:row_dimension]
     	row_dimension = @cube.dimension_object(options[:row_dimension])
     end
@@ -182,7 +183,7 @@ t = Time.now
 			level_fields.each { |field|
 				selection = "#{row_dimension_alias}.#{field}"
 				selections << selection
-				row_fields << field
+				row_fields << field.to_sym
 			}
 		end
 	end
@@ -328,30 +329,30 @@ t = Time.now
             # "SELECT * FROM (#{statement}) WHERE #{agg_field} #{} LIMIT #{rank}"
         end
     end
-puts "==> ELAPSED SETUP: #{Time.now - t}"
-t = Time.now
+# puts "==> ELAPSED SETUP: #{Time.now - t}"
+# t = Time.now
     
     selection = @cube.dataset.connection[statement]
-    puts "COUNT: #{selection.count}"
-	puts "SQL: #{selection.sql}"
+    # puts "COUNT: #{selection.count}"
+	# puts "SQL: #{selection.sql}"
 
     # @option options [Symbol] :limit_type Possible values: ':value', `:percent`, `:rank`
     # @option options [Symbol] :limit_aggregation Which aggregation is used for determining limit
     # @option options [Number] :limit Limit value based on limit_type 
     # @option options [Symbol] :limit_sort Possible values: `:ascending`, `:descending`
 
-puts "==> ELAPSED EXEC: #{Time.now - t}"
+# puts "==> ELAPSED EXEC: #{Time.now - t}"
 
     ################################################
 	# 7. Collect results
-t = Time.now
+# t = Time.now
 
     results = Array.new
     selection.each { |record|
     
         result_row = Hash.new
         
-		for i in ( 0..(operators.count - 1) )
+        operators.each_index { |i|
             field = "agg_#{i}".to_sym
             value = record[field]
     
@@ -360,11 +361,11 @@ t = Time.now
                 value = value.to_f
             end
             result_row[operators[i]] = value
-    	end
+    	}
 
 		# Collect fields from dimension levels
         row_fields.each { |field|
-            result_row[field.to_sym] = record[field.to_sym]
+            result_row[field] = record[field]
         }
 
         value = record[:record_count]
@@ -373,11 +374,26 @@ t = Time.now
         end
         result_row[:record_count] = value
 
+        # Add computed fields
+        if @computed_fields && !@computed_fields.empty?
+            @computed_fields.each { |field, block|
+                result_row[field] = block.call(result_row)
+            }
+        end
+
         results << result_row
     }
-puts "==> ELAPSED COLLECT: #{Time.now - t}"
+# puts "==> ELAPSED COLLECT: #{Time.now - t}"
 
     return results
+end
+
+def add_computed_field(field_name, &block) 
+    if !@computed_fields
+        @computed_fields = Hash.new
+    end
+    
+    @computed_fields[field_name] = block
 end
 
 

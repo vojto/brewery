@@ -154,7 +154,7 @@ def self.set_brewery_datastore(name)
 	if !datastore
 		raise "Datastore '#{name}' not found"
 	end
-	puts "SETTING DS: #{name}	"
+
 	DataMapper.setup(:default, datastore)
 end
 

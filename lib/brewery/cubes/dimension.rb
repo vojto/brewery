@@ -120,6 +120,11 @@ def create_hierarchy(name)
 end
 
 def default_hierarchy
+    # FIXME: flush cache on attribute update
+    if @default_hierarchy
+       return @default_hierarchy
+    end
+    
     hier = nil
     name = default_hierarchy_name
     if !name
@@ -131,6 +136,9 @@ def default_hierarchy
     if !hier
         hier = hierarchies.first
     end
+
+    @default_hierarchy = hier
+    
     return hier
 end
     
