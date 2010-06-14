@@ -26,12 +26,15 @@ require 'dm-migrations'
 require 'dm-is-list'
 require 'data_objects'
 
-require 'brewery/core/class_additions'
-require 'brewery/core/string_additions'
-require 'brewery/core/hash_additions'
+require 'brewery/core_ext/class'
+require 'brewery/core_ext/hash'
+require 'brewery/core_ext/numeric'
+require 'brewery/core_ext/string'
+
 require 'brewery/core/hierarchy_tree'
 require 'brewery/core/dataset'
 require 'brewery/core/data_store_manager'
+require 'brewery/core/data_table'
 
 require 'brewery/core/downloader'
 require 'brewery/core/download_batch'
