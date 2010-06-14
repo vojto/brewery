@@ -35,6 +35,7 @@ end
 
 module Brewery
 
+# @private
 module DownloadManagerDelegate
 def download_thread_did_start(download_manager, thread_id)
     # do nothing
@@ -75,6 +76,7 @@ def download_did_finish(download_manager)
 end
 end
 
+# @private
 class DownloadManager
 
 attr_accessor :download_directory

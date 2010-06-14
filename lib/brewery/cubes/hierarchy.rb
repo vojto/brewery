@@ -1,5 +1,6 @@
 module Brewery
 
+# @private
 class HierarchyLevel
     include DataMapper::Resource
 

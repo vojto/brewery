@@ -101,6 +101,8 @@ def self.load_default_configuration
 	end
 end
 
+# Configure brewery from a YAML file.
+# @see Brewery#configure_from_hash
 def self.load_configuration_from_file(file)
 	path = Pathname.new(file).expand_path
 
@@ -113,6 +115,7 @@ def self.load_configuration_from_file(file)
 	self.configure_from_hash(config)
 end
 
+# Configure brewery using hash.
 def self.configure_from_hash(config)
 	log_file = config["log_file"]
 	if log_file == "STDERR"
@@ -152,6 +155,8 @@ def self.configure_from_hash(config)
 	@@configuration = config
 end
 
+# Set datastore which will be used for brewery
+# @param [String, Symbol] name - name of the datastore. See: {DataStoreManager#data_store}
 def self.set_brewery_datastore(name)
 	datastore = DataStoreManager.default_manager.data_store(name)
 	if !datastore
@@ -161,16 +166,22 @@ def self.set_brewery_datastore(name)
 	DataMapper.setup(:default, datastore)
 end
 
+# Initialize datastore structures (database tables) used by brewery. If no tables exist, they will
+# be created. If there are already Brewery structures in the datastore (database), they will
+# be destroyed.
+#
+# Warning: This is destructive operation
 def self.initialize_brewery_datastore
 	# FIXME: this is destructive!
 	DataMapper.auto_migrate!
 end
 
+# Upgrade datastore structures (database tables) used by brewery to match current brewery structure
 def self.upgrade_brewery_datastore
 	DataMapper.auto_upgrade!
 end
 
-
+# Get Brewery configuration hash. See also: {Brewery#configure_from_file}
 def self.configuration
 	return @@configuration
 end

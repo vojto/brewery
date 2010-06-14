@@ -20,6 +20,7 @@
 
 module Brewery
 
+# @private
 class DownloadBatch
 attr_accessor :urls
 attr_accessor :download_directory

@@ -21,6 +21,7 @@
 
 module Brewery
 
+# @private
 class HierarchyTreeNode
 
 attr_accessor :represented_object
@@ -87,6 +88,8 @@ end
 
 end # class
 
+# Utility class for building hierarchical trees of values.
+# Note: this is not intedend to be used for storing and using tree data structures.
 class HierarchyTree
 
 def initialize
@@ -129,6 +132,7 @@ def object_at_path(path)
 	return node ? node.represented_object : nil
 end
 
+# Enumerate each node in the tree
 def each(sorted = false)
 	d = depth
 
