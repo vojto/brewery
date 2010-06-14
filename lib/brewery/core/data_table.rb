@@ -29,8 +29,29 @@ end
 
 # Container for metadata enriched data in tabular form.
 # Note: very similar to Google DataTable
+# @example
+#    # Create table and add some values
+#    table = DataTable.new
+#    table.add_column(:text, "Company", :company)
+#    table.add_column(:currency, "Amount", :amount, {:precision => 0, :currency => '€', :alignment => :right})
+#    table.add_column(:percent, "Ratio", :ratio, { :precision => 2 , :alignment => :right} )
+#    # ...
+#    records.each { | rec |
+#        table.add_row([[rec[:company_id], rec[:name]], rec[:sum], rec[:ratio]])
+#    }
+#    # ...
+#    # Retrieve formatted value:
+#    amount = table.formatted_value_at(1, 2)
+#    ratio = table.formatted_value_at(1, 3)
+#    # amount will be: '100 500€’
+#    # ratio will be : '5,12%’
 class DataTable
+
+# Table rows - arrays of TableCells. Treat contents of this attribute as read-only and limit
+# its use for enumeration or counting to maintain internal table consistency.
 attr_reader :rows
+
+# Information about table columns - array of TableColumn
 attr_reader :columns
 
 def initialize
@@ -170,22 +191,6 @@ end
 # * :format_string - string to format currency/unit values. Use %n vor value (number) and %u for unit. Default: '%n%u'
 # @param [Integer] row
 # @param [Integer] column
-# @example
-#    # Create table and add some values
-#    table = DataTable.new
-#    table.add_column(:text, "Company", :company)
-#    table.add_column(:currency, "Amount", :amount, {:precision => 0, :currency => '€', :alignment => :right})
-#    table.add_column(:percent, "Ratio", :ratio, { :precision => 2 , :alignment => :right} )
-#    # ...
-#    records.each { | rec |
-#        table.add_row([[rec[:company_id], rec[:name]], rec[:sum], rec[:ratio]])
-#    }
-#    # ...
-#    # Retrieve formatted value:
-#    amount = table.formatted_value_at(1, 2)
-#    ratio = table.formatted_value_at(1, 3)
-#    # amount will be: '100 500€’
-#    # ratio will be : '5,12%’
 # @return Formatted cell value at row, column. 
 def formatted_value_at(row, column)
     # FIXME: configure formatting; this is just for testing purposes
@@ -199,19 +204,23 @@ def formatted_value_at(row, column)
     precision ||= 2
 
     value = cell.value
+
+    # FIXME: localize
+    delimiter = ' '
+    separator = '.'
     
     case col.format
     when :text
         return value
     when :number
         # FIXME: make this localizable
-        fvalue = value.to_string_with_precision(precision,' ', ',')
+        fvalue = value.to_string_with_precision(precision,delimiter, separator)
         return fvalue
     when :percent
-        fvalue = (value * 100.0).to_string_with_precision(precision,' ', ',')
+        fvalue = (value * 100.0).to_string_with_precision(precision,delimiter, separator)
         return "#{fvalue} %"
     when :currency, :units
-        fvalue = value.to_string_with_precision(precision,' ', ',')
+        fvalue = value.to_string_with_precision(precision,delimiter, separator)
         unit = col.parameters[:currency]
         unit ||= col.parameters[:unit]
         unit ||= '$'
@@ -223,8 +232,6 @@ def formatted_value_at(row, column)
         rescue
             return fvalue
         end
-
-        return "#{fvalue} #{currency}"
     else
         return value
     end

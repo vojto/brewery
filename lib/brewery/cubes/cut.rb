@@ -30,6 +30,7 @@ def self.set_cut(dimension, path_set)
 end
 
 # Return SQL condition for a cut
+# @private
 # @api private
 def sql_condition(dimension_alias)
     raise RuntimeError, "subclasses should override sql_condition"
@@ -43,6 +44,7 @@ include DataObjects::Quoting
 attr_accessor :path
 
 # @api private
+# @private
 def sql_condition(dimension, dimension_alias)
 	conditions = Array.new
 	level_index = 0
@@ -69,6 +71,31 @@ def sql_condition(dimension, dimension_alias)
 	
 	return cond_expression
 end
+# @private
+def filter_dataset(dataset)
+	conditions = Array.new
+	level_index = 0
+
+    #FIXME: use more
+    hier = dimension.default_hierarchy
+
+    if !hier
+        raise RuntimeError, "Dimension has no hierarchy"
+    end
+
+	path.each { |level_value|
+		if level_value != :all
+			level = hier.levels[level_index]
+			level_column = level.key_field
+			# quoted_value = quote_value(level_value)
+			dataset = dataset.filter([[level_column.to_sym,level_value]])
+		end
+		level_index = level_index + 1
+	}
+	
+	return dataset
+end
+
 end # class PointCut
 
 class RangeCut < Cut

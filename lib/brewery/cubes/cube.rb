@@ -86,6 +86,7 @@ def dimension_object(dimension)
 	if !obj
 		raise RuntimeError, "Cube '#{self.name}' has no joined dimension '#{dimension}'"
 	end
+
 	return obj
 end
 
@@ -98,6 +99,7 @@ def dimension_with_name(name)
 		dim = dimensions.first( :name => name )
 		@cached_dimensions[name] = dim
 	end
+
 	return dim
 end
 

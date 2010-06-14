@@ -290,9 +290,15 @@ def aggregate(measure, options = {})
 
     if limit
         limit_aggregation = options[:limit_aggregation]
-        limit_value = options[:limit_value]
-        limit_sort = options[:limit_sort]
-
+        case limit
+        when :top_10
+            limit_value = 10
+            limit_sort = :top
+        else
+            limit_value = options[:limit_value]
+            limit_sort = options[:limit_sort]
+        end
+        
         case limit
         when :rank
             case limit_sort
@@ -381,6 +387,108 @@ def aggregate(measure, options = {})
 # puts "==> ELAPSED COLLECT: #{Time.now - t}"
 
     return results
+end
+
+# @return Dataset (database table) containing fact details from the cube cut
+def details
+	table_alias = "t"
+
+    ################################################
+	# 0. Collect tables to be joined
+
+	dimension_aliases = Hash.new
+	all_dimensions = Array.new
+
+	dims = @cuts.collect { |cut| cut.dimension }
+	all_dimensions.concat(dims)
+	all_dimensions = all_dimensions.uniq
+	
+	i = 0
+    all_dimensions.each { |dimension|
+    	if dimension_aliases[dimension]
+    		next
+    	end
+    	dimension_aliases[dimension] = "d#{i}"
+        i += 1
+    }
+
+    ################################################
+	# 1. What needs to be SELECTed
+
+	selections = Array.new	
+    
+    # Row fields - from dimension
+    selections << "#{table_alias}.*"
+
+	
+    ################################################
+	# 2. Filters - for WHERE clausule
+	filters = Array.new
+	
+	@cuts.each { |cut|
+	    # puts "CUT #{cut.class}"
+		if !cut.dimension
+		    raise RuntimeError, "No dimension in cut (#{cut.class}), slicing cube '#{@cube.name}'"
+		end
+		dimension = @cube.dimension_object(cut.dimension)
+		if !dimension
+		    raise RuntimeError, "No cut dimension '#{cut.dimension.name}' in cube '#{@cube.name}'"
+		end
+		dim_alias = dimension_aliases[dimension]
+		# puts "==> WHERE COND CUT: #{cut.dimension} DIM: #{dimension} ALIAS: #{dim_alias}"
+		filters << cut.sql_condition(dimension, dim_alias)
+	}
+
+    ################################################
+	# 4. Join
+
+	joins = Array.new
+
+	all_dimensions.each { |dimension|
+		dim_alias = dimension_aliases[dimension]
+        join = @cube.join_for_dimension(dimension)
+        # puts "JOIN FOR DIM: '#{dim_alias}' #{dimension}(#{dimension.class}): #{join.fact_key}=#{join.dimension_key}"
+
+        joins << dimension.sql_join_expression(join.dimension_key,
+                                               join.fact_key,
+                                               dim_alias, table_alias)
+	}
+
+    ################################################
+	# 5. Create SQL SELECT statement
+	
+	select_expr = selections.join(', ')
+	
+	join_expr = joins.join(' ')
+	
+	if filters && filters.count > 0
+		joined_filters = filters.join(' AND ')
+		filter_expr = "WHERE #{joined_filters}"
+	else
+		filter_expr = ''
+	end
+	
+	table_name = @cube.fact_table
+	if !table_name
+	    raise RuntimeError, "No fact table name specified for cube '#{@cube.name}'"
+	end
+	
+	statement = "SELECT #{select_expr}
+				FROM #{table_name} #{table_alias}
+				#{join_expr}
+				#{filter_expr}"
+
+    ################################################
+	# 6. Execute statement
+
+	# puts "SQL: #{statement}"
+    if !@cube.dataset
+        raise RuntimeError, "No dataset set for cube '#{@cube.name}'"
+    end
+        
+    dataset = @cube.dataset.connection[statement]
+
+    return dataset
 end
 
 def add_computed_field(field_name, &block) 

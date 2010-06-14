@@ -39,6 +39,7 @@ def define_dimensions
     hier = dim.create_hierarchy(:default)
     hier.levels = [:year, :month, :day]
     hier.save
+    dim.table = :dm_date
     dim.dataset = dataset
 	@date_dimension = dim
 	
@@ -52,6 +53,7 @@ def define_dimensions
     hier.levels = [:category]
     hier.save
 	dim.dataset = dataset
+	dim.table = :dm_category
 
 	@category_dimension = dim
 
@@ -299,6 +301,17 @@ def test_cuts
     			                      :row_levels => [:year, :month]})
     assert_equal(300, results[0][:sum])
     assert_equal(2, results.count)
+end
+
+def test_detail
+	slice = @cube.whole.cut_by_point(:date, [2010])
+    assert_equal(7, slice.details.count)
+    								   
+	from_key = @date_dimension.key_for_path([2010,1,1])
+	to_key = @date_dimension.key_for_path([2010,2,3])
+
+	slice = @cube.whole.cut_by_range(:date, from_key, to_key)
+    assert_equal(3, slice.details.count)
 end
 
 end
