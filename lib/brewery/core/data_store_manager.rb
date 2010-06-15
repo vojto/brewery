@@ -85,12 +85,7 @@ end
 def add_stores_in_file(path)
 	hash = YAML.load_file(path)
 	
-	symbolised_hash = Hash.new
-	hash.keys.each { |key|
-		symbolised_hash[key.to_sym] = hash[key]
-	}
-	
-	@file_data_stores[path] = symbolised_hash
+	@file_data_stores[path] = hash.hash_by_symbolising_keys
 	
 	if not @files.include?(path)
 		@files << path
@@ -118,6 +113,10 @@ end
 # @param [Hash, String] description containing data store connection information. Can be string URI
 #   or hash with keys such as: :database, :adapter, :user, :host, :password, ...
 def add_data_store(name, description)
+	if description.class == Hash
+		description = description.hash_by_symbolising_keys
+	end
+	
 	@data_stores[name.to_sym] = description
 end
 
@@ -162,8 +161,14 @@ end
 def create_connection(store_name, identifier = nil)
 	# FIXME: rename to create_named_connection
 	store = data_store(store_name)
+	store = store.hash_by_symbolising_keys
 	if store
 		connection = Sequel.connect(store)
+
+		# FIXME: this is workaround for Sequel not passing search path to Postgres adapter
+		if store[:search_path] && store[:adapter].to_s == 'postgres'
+      		connection.execute("SET search_path TO #{store[:search_path]}") 
+		end
 		
 		if identifier
 			add_named_connection(connection, identifier)

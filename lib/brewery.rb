@@ -101,6 +101,17 @@ def self.load_default_configuration
 	end
 end
 
+# FIXME: Check for Rails existence
+def self.load_rails_configuration
+	config_dir = Pathname.new(Rails.root) + "config"
+	
+    Brewery::load_configuration_from_file(config_dir + "brewery.yml")
+    
+    store_manager = Brewery::data_store_manager
+    store_manager.add_stores_in_file(config_dir + "brewery-data-stores.yml")
+    store_manager.add_stores_in_file(config_dir + "database.yml")
+end
+
 # Configure brewery from a YAML file.
 # @see Brewery#configure_from_hash
 def self.load_configuration_from_file(file)
