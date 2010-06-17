@@ -161,12 +161,20 @@ end
 def create_connection(store_name, identifier = nil)
 	# FIXME: rename to create_named_connection
 	store = data_store(store_name)
-	store = store.hash_by_symbolising_keys
+	if !store
+		raise RuntimeError, "Unknown store with name '#{store_name}'"
+	end
+
+	if store.class == Hash
+		store = store.hash_by_symbolising_keys
+	end
+	
 	if store
 		connection = Sequel.connect(store)
 
 		# FIXME: this is workaround for Sequel not passing search path to Postgres adapter
-		if store[:search_path] && store[:adapter].to_s == 'postgres'
+		# FIXME: this does not work for String connection infos
+		if store.class == Hash && store[:search_path] && store[:adapter].to_s == 'postgres'
       		connection.execute("SET search_path TO #{store[:search_path]}") 
 		end
 		
