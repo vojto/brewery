@@ -252,40 +252,44 @@ end
 
 def test_cube
 	
-	values = @cube.whole.aggregate(:amount)
-	assert_equal(160, values[0][:sum])
-	assert_equal(7, values[0][:record_count])
+	result = @cube.whole.aggregate(:amount)
+	assert_equal([], result.rows)
+	assert_not_nil([], result.summary)
+	assert_equal(160, result.summary[:sum])
+	assert_equal(7, result.summary[:record_count])
 
-	values = @cube.whole.aggregate(:revenue)
-	assert_equal(2800, values[0][:sum])
-	assert_equal(7, values[0][:record_count])
+	result = @cube.whole.aggregate(:revenue)
+	assert_equal(2800, result.summary[:sum])
+	assert_equal(7, result.summary[:record_count])
 
 	slice = @cube.whole.cut_by_point(:date, [2010, 3])
-	values = slice.aggregate(:revenue)
-	assert_equal(1100, values[0][:sum])
-	assert_equal(2, values[0][:record_count])
+	result = slice.aggregate(:revenue)
+	assert_equal(1100, result.summary[:sum])
+	assert_equal(2, result.summary[:record_count])
 
 	cat_slice = slice.cut_by_point(:category, ['new'])
-	values = cat_slice.aggregate(:revenue)
-	assert_equal(600, values[0][:sum])
-	assert_equal(1, values[0][:record_count])
+	result = cat_slice.aggregate(:revenue)
+	assert_equal(600, result.summary[:sum])
+	assert_equal(1, result.summary[:record_count])
 
-    results = slice.aggregate(:revenue, { :row_dimension => :category,
+	slice = @cube.whole.cut_by_point(:date, [2010, 3])
+    result = slice.aggregate(:revenue, { :row_dimension => :category,
     				                      :row_levels => [:category]} )
-    assert_equal(600, results[0][:sum])
-    assert_equal(500, results[1][:sum])
-    
+	assert_equal(1100, result.summary[:sum])
+	assert_equal(2, result.summary[:record_count])
+    assert_equal(600, result.rows[0][:sum])
+    assert_equal(500, result.rows[1][:sum])
 end
 
 def test_cuts
 
 	slice = @cube.whole.cut_by_point(:date, [2010])
-    results = slice.aggregate(:revenue)
-    assert_equal(2800, results[0][:sum])
+    result = slice.aggregate(:revenue)
+    assert_equal(2800, result.summary[:sum])
 
-    results = slice.aggregate(:revenue, {:row_dimension => :date, 
+    result = slice.aggregate(:revenue, {:row_dimension => :date, 
     								   :row_levels => [:year, :month]})
-    assert_equal(300, results[0][:sum])
+    assert_equal(300, result.rows[0][:sum])
     								   
 	from_key = @date_dimension.key_for_path([2010,1,1])
 	assert_equal(20100101, from_key)
@@ -297,10 +301,20 @@ def test_cuts
 	to_key = @date_dimension.key_for_path([2010,2,3])
 
 	slice = @cube.whole.cut_by_range(:date, from_key, to_key)
-    results = slice.aggregate(:revenue, {:row_dimension => :date, 
+    result = slice.aggregate(:revenue, {:row_dimension => :date, 
     			                      :row_levels => [:year, :month]})
-    assert_equal(300, results[0][:sum])
-    assert_equal(2, results.count)
+    assert_equal(300, result.rows[0][:sum])
+    assert_equal(2, result.rows.count)
+
+    result = slice.aggregate(:revenue, {:row_dimension => :date, 
+    			                      :row_levels => [:year, :month],
+    			                      :limit => :rank,
+    			                      :limit_value => 1,
+    			                      :limit_sort => :top})
+    assert_equal(1, result.rows.count)
+    assert_equal(300, result.rows[0][:sum])
+    assert_equal(300, result.remainder[:sum])
+    assert_equal(2, result.remainder[:record_count])
 end
 
 def test_detail

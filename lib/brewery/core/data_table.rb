@@ -204,6 +204,7 @@ def formatted_value_at(row, column)
     precision ||= 2
 
     value = cell.value
+    return nil unless value
 
     # FIXME: localize
     delimiter = ' '

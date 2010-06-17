@@ -10,8 +10,8 @@ class Cube
 	property :fact_table, String
 
     has n, :models,  {:through=>DataMapper::Resource}
-    has n, :dimensions,  :through => :cube_dimension_joins
     has n, :cube_dimension_joins
+    has n, :dimensions,  :through => :cube_dimension_joins
 
 # Dataset containing facts
 attr_reader :dataset

@@ -51,15 +51,16 @@ require 'brewery/etl/etl_defaults'
 require 'brewery/quality/quality_auditor'
 
 # Cubes
-require 'brewery/cubes/cube.rb'
-require 'brewery/cubes/dimension.rb'
-require 'brewery/cubes/dimension_level.rb'
-require 'brewery/cubes/cube_dimension_join.rb'
-require 'brewery/cubes/slice.rb'
-require 'brewery/cubes/cut.rb'
-require 'brewery/cubes/workspace.rb'
-require 'brewery/cubes/model.rb'
-require 'brewery/cubes/hierarchy.rb'
+require 'brewery/cubes/aggregation_result'
+require 'brewery/cubes/cube'
+require 'brewery/cubes/dimension'
+require 'brewery/cubes/dimension_level'
+require 'brewery/cubes/cube_dimension_join'
+require 'brewery/cubes/slice'
+require 'brewery/cubes/cut'
+require 'brewery/cubes/workspace'
+require 'brewery/cubes/model'
+require 'brewery/cubes/hierarchy'
 
 # require 'brewery-streams'
 
@@ -103,13 +104,16 @@ end
 
 # FIXME: Check for Rails existence
 def self.load_rails_configuration
-	config_dir = Pathname.new(Rails.root) + "config"
-	
+  config_dir = Pathname.new(Rails.root) + "config"
+
     Brewery::load_configuration_from_file(config_dir + "brewery.yml")
-    
+
     store_manager = Brewery::data_store_manager
-    store_manager.add_stores_in_file(config_dir + "brewery-data-stores.yml")
-    store_manager.add_stores_in_file(config_dir + "database.yml")
+    ['brewery-data-stores', 'database'].each do |file|
+      if (config_dir+file).exist?
+        store_manager.add_stores_in_file(config_dir+file)
+      end
+    end
 end
 
 # Configure brewery from a YAML file.

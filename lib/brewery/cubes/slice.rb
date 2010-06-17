@@ -36,6 +36,7 @@ attr_reader :cuts
 
 # @deprecated
 attr_reader :cut_values
+attr_reader :summaries
 
 # Initialize slice instance as part of a cube
 def initialize(cube)
@@ -43,14 +44,16 @@ def initialize(cube)
     @cut_values = Hash.new
     
     @cuts = Array.new
+    @summaries = Hash.new
 end
 
 # Copying contructor, called for Slice#dup
 def initialize_copy(*)
-  @cut_values = @cut_values.dup
-  @cuts = @cuts.dup
-  # FIXME: is this the right behaviour?
-  @computed_fields = nil
+    @cut_values = @cut_values.dup
+    @cuts = @cuts.dup
+    @summaries = Hash.new
+    # FIXME: is this the right behaviour?
+    @computed_fields = nil
 end
 
 # Cut slice by provided cut
@@ -84,6 +87,7 @@ end
 # @param [Cut] cut Cut to be added
 def add_cut(cut)
 	@cuts << cut
+	@summaries.clear
 end
 
 # Remove all cuts by dimension from the receiver.
@@ -91,6 +95,7 @@ def remove_cuts_by_dimension(dimension)
 	@cuts.delete_if { |cut|
 		@cube.dimension_object(cut.dimension) == @cube.dimension_object(dimension)
 	}
+	@summaries.clear
 end
 
 # @deprecated
@@ -110,13 +115,15 @@ end
 # @option options [Symbol] :limit_sort Possible values: `:ascending`, `:descending`
 # == Examples:
 # * aggregate(:amount, { :row_dimension => [:date], :row_levels => [:year, :month]} )
-# @return [Array] list of rows where each row represents a point at row_dimension.
-#   If no row dimension is specified, only one summary row is returned.
+# @return [AggregationResult] object with aggregation summary and rows where each
+#   row represents a point at row_dimension if specified.
 # @todo implement limits
 def aggregate(measure, options = {})
 # t = Time.now
     if options[:row_dimension]
     	row_dimension = @cube.dimension_object(options[:row_dimension])
+    else
+        row_dimension = nil
     end
     
 	row_levels = options[:row_levels]
@@ -161,6 +168,7 @@ def aggregate(measure, options = {})
 	# 1. What needs to be SELECTed
 
 	selections = Array.new
+	summary_selections = Array.new
     # 1.1 Aggregations
 	
 	operators = [:sum, :average]
@@ -170,10 +178,12 @@ def aggregate(measure, options = {})
         field = "agg_#{i}"
 	    aggregated_fields[operators[i]] = field
         selections << sql_field_aggregate(measure, operators[i], field)
+        summary_selections << sql_field_aggregate(measure, operators[i], field)
     end
     
     # 1.2 Add total record count
     selections << "COUNT(1) AS record_count"
+    summary_selections << "COUNT(1) AS record_count"
 
     # 1.3 Row fields - from dimension
     row_fields = Array.new
@@ -242,6 +252,7 @@ def aggregate(measure, options = {})
 	# 5. Create SQL SELECT statement
 	
 	select_expr = selections.join(', ')
+	summary_select_expr = summary_selections.join(', ')
 	
 	join_expr = joins.join(' ')
 	
@@ -277,14 +288,14 @@ def aggregate(measure, options = {})
 				#{filter_expr}
 				#{group_expr}
 				#{sort_expr}"
+    summary_statement = "SELECT #{summary_select_expr}
+				FROM #{table_name} #{table_alias}
+				#{join_expr}
+				#{filter_expr}"
 
     ################################################
-	# 6. Execute statement
+	# 6. Set limits
 
-	# puts "SQL: #{statement}"
-    if !@cube.dataset
-        raise RuntimeError, "No dataset set for cube '#{@cube.name}'"
-    end
     
     limit = options[:limit]
 
@@ -337,55 +348,120 @@ def aggregate(measure, options = {})
     end
 # puts "==> ELAPSED SETUP: #{Time.now - t}"
 # t = Time.now
-    
-    selection = @cube.dataset.connection[statement]
-    # puts "COUNT: #{selection.count}"
-	# puts "SQL: #{selection.sql}"
-
-# puts "==> ELAPSED EXEC: #{Time.now - t}"
 
     ################################################
-	# 7. Collect results
-# t = Time.now
+	# 7. Compute summary
 
-    results = Array.new
-    selection.each { |record|
-    
-        result_row = Hash.new
+    connection = @cube.dataset.connection
+
+    # puts "SQL: #{statement}"
+    if !@cube.dataset
+        raise RuntimeError, "No dataset set for cube '#{@cube.name}'"
+    end
+
+    if !@summaries[measure]
+        summary_data = connection[summary_statement]
+        row = summary_data.first
+
+        summary = Hash.new
         
         operators.each_index { |i|
             field = "agg_#{i}".to_sym
-            value = record[field]
+            value = row[field]
     
             # FIXME: use appropriate type (Sequel SQLite returns String)
             if value.class == String
                 value = value.to_f
             end
-            result_row[operators[i]] = value
+            summary[operators[i]] = value
     	}
-
-		# Collect fields from dimension levels
-        row_fields.each { |field|
-            result_row[field] = record[field]
-        }
-
-        value = record[:record_count]
+    	
+        value = row[:record_count]
         if value.class == String
             value = value.to_f
         end
-        result_row[:record_count] = value
+        summary[:record_count] = value
 
-        # Add computed fields
-        if @computed_fields && !@computed_fields.empty?
-            @computed_fields.each { |field, block|
-                result_row[field] = block.call(result_row)
+    	@summaries[measure] = summary
+    else
+        summary = @summaries[measure]
+    end
+
+    ################################################
+	# 8. Execute main selection
+
+    r_sum = 0
+    r_count = 0
+
+    if row_dimension
+        selection = connection[statement]
+        
+        # puts "COUNT: #{selection.count}"
+        # puts "SQL: #{selection.sql}"
+    
+        ################################################
+        # 8.1 Collect results
+    
+        rows = Array.new
+        selection.each { |record|
+        
+            result_row = Hash.new
+            
+            operators.each_index { |i|
+                field = "agg_#{i}".to_sym
+                value = record[field]
+        
+                # FIXME: use appropriate type (Sequel SQLite returns String)
+                if value.class == String
+                    value = value.to_f
+                end
+                result_row[operators[i]] = value
             }
-        end
-
-        results << result_row
-    }
+    
+            # Collect fields from dimension levels
+            row_fields.each { |field|
+                result_row[field] = record[field]
+            }
+    
+            value = record[:record_count]
+            if value.class == String
+                value = value.to_f
+            end
+            result_row[:record_count] = value
+    
+            # Add computed fields
+            if @computed_fields && !@computed_fields.empty?
+                @computed_fields.each { |field, block|
+                    result_row[field] = block.call(result_row)
+                }
+            end
+            r_sum += result_row[:sum]
+            rows << result_row
+        }
+    else
+        # Only summary
+        rows = Array.new
+    end
+    
+    # Compute remainder
+    
+    if limit
+        remainder = Hash.new
+        remainder[:sum] = summary[:sum] - r_sum
+        remainder[:record_count] = summary[:record_count] - rows.count
+    else
+        remainder = nil
+    end
+    
 # puts "==> ELAPSED COLLECT: #{Time.now - t}"
 
+    results = AggregationResult.new
+    results.rows = rows
+    results.aggregation_options = options
+    results.measure = measure
+    results.remainder = remainder
+    results.summary = @summaries[measure]
+    
     return results
 end
 
