@@ -170,6 +170,19 @@ def self.configure_from_hash(config)
 	@@configuration = config
 end
 
+# @returns default workspace
+def self.workspace
+	return Workspace.default_workspace
+end
+
+# Creates a new workspace and set it as default.
+# @see Workspace#initialize
+# @see DataStoreManager#create_connection
+def self.crate_default_workspace(connection)
+    workspace = Brewery::Workspace.new(connection)
+    workspace.set_default
+end
+
 # Set datastore which will be used for brewery
 # @param [String, Symbol] name - name of the datastore. See: {DataStoreManager#data_store}
 def self.set_brewery_datastore(name)
@@ -216,5 +229,6 @@ end
 def self.logger
 	return @@logger
 end
+
 end # module
 

@@ -352,15 +352,10 @@ def aggregate(measure, options = {})
     ################################################
 	# 7. Compute summary
 
-    connection = @cube.dataset.connection
-
     # puts "SQL: #{statement}"
-    if !@cube.dataset
-        raise RuntimeError, "No dataset set for cube '#{@cube.name}'"
-    end
 
     if !@summaries[measure]
-        summary_data = connection[summary_statement]
+        summary_data = Brewery.workspace.execute_sql(summary_statement)
         row = summary_data.first
 
         summary = Hash.new
@@ -394,7 +389,7 @@ def aggregate(measure, options = {})
     r_count = 0
 
     if row_dimension
-        selection = connection[statement]
+        selection = Brewery.workspace.execute_sql(statement)
         
         # puts "COUNT: #{selection.count}"
         # puts "SQL: #{selection.sql}"
@@ -558,11 +553,8 @@ def details
 	# 6. Execute statement
 
 	# puts "SQL: #{statement}"
-    if !@cube.dataset
-        raise RuntimeError, "No dataset set for cube '#{@cube.name}'"
-    end
         
-    dataset = @cube.dataset.connection[statement]
+    dataset = Brewery.workspace.execute_sql(statement)
 
     return dataset
 end

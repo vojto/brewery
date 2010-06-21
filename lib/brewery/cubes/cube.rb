@@ -13,17 +13,10 @@ class Cube
     has n, :cube_dimension_joins
     has n, :dimensions,  :through => :cube_dimension_joins
 
-# Dataset containing facts
-attr_reader :dataset
-
+# FIXME: remove this
 attr_accessor :workspace
 
 # @private
-
-
-def dataset=(dataset)
-	@dataset = dataset
-end
 
 def aggregate(measure)
 	return @whole.aggregate(measure)

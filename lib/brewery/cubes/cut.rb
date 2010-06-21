@@ -36,6 +36,15 @@ def sql_condition(dimension_alias)
     raise RuntimeError, "subclasses should override sql_condition"
 end
 
+def dimension_name
+    case dimension
+    when String, Symbol
+        return dimension
+    else
+        return dimension.name
+    end
+end
+
 end # class Cut
 
 class PointCut < Cut

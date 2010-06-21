@@ -85,5 +85,15 @@ def load_cube_from_file(file)
     
 end
 
+# Returns model with given name
+def self.model_with_name(name)
+    return self.first(:name => name)
+end
+
+# Returns cube with given name
+def cube_with_name(name)
+    return cubes.first( :name => name )
+end
+
 end # class
 end # module
