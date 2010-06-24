@@ -21,6 +21,11 @@ def self.model_from_path(path)
 	return model
 end
 
+# Load model from a directory specified by _path_. The directory should contain:
+# * model.yml - model information
+# * dim_*.yml - dimension specifications
+# * cube_*.yml - cube specifications
+# @param [String, Pathname] Directory with model files
 def load_from_path(path)
     path = Pathname.new(path)
     model_file = path + 'model.yml'
@@ -87,7 +92,11 @@ end
 
 # Returns model with given name
 def self.model_with_name(name)
-    return self.first(:name => name)
+    model = self.first(:name => name)
+    if !model
+        raise ArgumentError, "Unable to find model with name '#{name}'"
+    end
+    return model
 end
 
 # Returns cube with given name
