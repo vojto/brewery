@@ -142,17 +142,6 @@ def default_hierarchy
     return hier
 end
     
-
-# def initialize
-#	@key_field = :id
-# 	@levels = Hash.new
-#end
-
-def dataset=(dataset)
-	@dataset = dataset
-	self.table = dataset.table_name
-end
-
 # Returns values of hierarchy level which follows the last level in given path.
 #
 # == Example:
@@ -371,7 +360,6 @@ def sql_join_expression(dimension_field, fact_field, dimension_alias, table_alia
 
 	return join_expression
 end
-
 
 def to_hash
 	hash = Hash.new

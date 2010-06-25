@@ -559,6 +559,37 @@ def details
     return dataset
 end
 
+def facts(options = {})
+	query = StarQuery.new(@cube)
+
+    ################################################
+	# 0. Collect tables to be joined
+
+	@cube.dimensions.each { |dimension|
+        join = @cube.join_for_dimension(dimension)
+		query.join_dimension(dimension, join.dimension_key, join.fact_key)
+	}
+	
+    ################################################
+	# 2. Filters - for WHERE clausule
+	
+	@cuts.each { |cut|
+		if !cut.dimension
+		    raise RuntimeError, "No dimension in cut (#{cut.class}), slicing cube '#{@cube.name}'"
+		end
+
+		dimension = @cube.dimension_object(cut.dimension)
+		if !dimension
+		    raise RuntimeError, "No cut dimension '#{cut.dimension.name}' in cube '#{@cube.name}'"
+		end
+
+		# puts "==> WHERE COND CUT: #{cut.dimension} DIM: #{dimension} ALIAS: #{dim_alias}"
+		query.add_cut(cut)
+	}
+        
+    return query.records
+end
+
 def add_computed_field(field_name, &block) 
     if !@computed_fields
         @computed_fields = Hash.new

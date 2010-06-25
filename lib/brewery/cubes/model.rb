@@ -1,4 +1,5 @@
 module Brewery
+require 'brewery/cubes/fact_field'
 
 class Model
     include DataMapper::Resource
@@ -88,6 +89,12 @@ def load_cube_from_file(file)
         cube.join_dimension(dim, join_info[:fact_key])
     }
     
+    fact_fields = hash[:fields]
+    
+    fact_fields.each { |field_info|
+        field = cube.fact_fields.new(field_info)
+        puts "Added field: #{field.name}"
+    }
 end
 
 # Returns model with given name

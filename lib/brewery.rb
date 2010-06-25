@@ -61,6 +61,7 @@ require 'brewery/cubes/cut'
 require 'brewery/cubes/workspace'
 require 'brewery/cubes/model'
 require 'brewery/cubes/hierarchy'
+require 'brewery/cubes/star_query'
 
 # require 'brewery-streams'
 
