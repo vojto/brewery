@@ -1,7 +1,13 @@
 module Brewery
+
+# @private
+# FIXME: this is quickly written SQL abstraction, requires overall revision
 class StarQuery
 
 attr_accessor :fact_table
+attr_accessor :order
+attr_accessor :page
+attr_accessor :page_size
 
 def initialize(cube)
     @cube = cube
@@ -64,7 +70,6 @@ def records
     puts "==> SQL: #{statement}"
 
     dataset = Brewery.workspace.execute_sql(statement)
-    puts "==> count: #{dataset.count}"
     
 #    record = dataset.first
 #    hash = {}
@@ -97,6 +102,7 @@ end
 def sql_for_records
     create_dimension_aliases
     
+    # FIXME: select expression field names are incosistent with field names for one record
     join_expression = create_join_expressions
     select_expression = create_select_expression    
     where_expression = create_where_expression
@@ -106,6 +112,18 @@ def sql_for_records
     exprs << "FROM #{@fact_table} AS #{@fact_alias} "
     exprs << join_expression
     exprs << "WHERE #{where_expression}"
+    
+    if @order
+        exprs << "ORDER BY #{@order}"
+    end
+
+    if @page
+        if !@page_size
+            raise ArgumentError, "No page size specified"
+        end
+        exprs << "LIMIT #{@page_size} OFFSET #{@page * @page_size}"
+    end
+    
     
     statement = exprs.join("\n")
     return statement
@@ -148,12 +166,17 @@ def create_select_expression
         dim_alias = @dimension_aliases[dim]
         dim.levels.each { |level|
             level.level_fields.each { |field|
-                field_alias = "#{dim_alias}_#{i}"
+                # field_alias = "#{dim_alias}_#{i}"
+                field_alias = "#{dim.name}.#{field}"
                 @selected_fields[field_alias] = "#{dim.name}.#{field}"
-                selections << "#{dim_alias}.#{field} AS #{field_alias}"
+                selections << "#{dim_alias}.#{field} AS \"#{field_alias}\""
                 i += 1
             }
         }
+        field = dim.key_field
+                field_alias = "#{dim.name}.#{field}"
+        @selected_fields[field_alias] = "#{dim.name}.#{field}"
+        selections << "#{dim_alias}.#{field} AS \"#{field_alias}\""
     }
 
     return selections.join(', ')

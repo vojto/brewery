@@ -179,7 +179,7 @@ end
 # Creates a new workspace and set it as default.
 # @see Workspace#initialize
 # @see DataStoreManager#create_connection
-def self.crate_default_workspace(connection)
+def self.create_default_workspace(connection)
     workspace = Brewery::Workspace.new(connection)
     workspace.set_default
 end

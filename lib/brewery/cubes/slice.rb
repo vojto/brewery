@@ -352,7 +352,7 @@ def aggregate(measure, options = {})
     ################################################
 	# 7. Compute summary
 
-    # puts "SQL: #{statement}"
+    puts "SQL: #{statement}"
 
     if !@summaries[measure]
         summary_data = Brewery.workspace.execute_sql(summary_statement)
@@ -586,7 +586,11 @@ def facts(options = {})
 		# puts "==> WHERE COND CUT: #{cut.dimension} DIM: #{dimension} ALIAS: #{dim_alias}"
 		query.add_cut(cut)
 	}
-        
+    
+    query.order = options[:order]
+    query.page = options[:page]
+    query.page_size = options[:page_size]
+    
     return query.records
 end
 

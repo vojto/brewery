@@ -122,7 +122,7 @@ def label_for_field(field_name)
         field_name = parts[0]
         field = field_with_name(field_name)
         if field
-            return field.name
+            return field.label
         else
             return nil
         end
