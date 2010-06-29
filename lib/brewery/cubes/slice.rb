@@ -117,8 +117,9 @@ end
 # * aggregate(:amount, { :row_dimension => [:date], :row_levels => [:year, :month]} )
 # @return [AggregationResult] object with aggregation summary and rows where each
 #   row represents a point at row_dimension if specified.
-# @todo implement limits
+# @todo Rewrite this to use StarSchema - reuse code
 def aggregate(measure, options = {})
+    # FIXME: rewrite this to use StarSchema
 # t = Time.now
     if options[:row_dimension]
     	row_dimension = @cube.dimension_object(options[:row_dimension])
@@ -292,6 +293,14 @@ def aggregate(measure, options = {})
 				FROM #{table_name} #{table_alias}
 				#{join_expr}
 				#{filter_expr}"
+
+    # FIXME: this should definitely go to StarSchema
+    page = options[:page]
+    if page
+        page_size = options[:page_size]
+        limit_statement = " LIMIT #{page_size} OFFSET #{page * page_size}"
+        statement << limit_statement
+    end
 
     ################################################
 	# 6. Set limits
