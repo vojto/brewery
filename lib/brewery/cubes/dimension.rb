@@ -215,23 +215,34 @@ end
 # Return dimension key for given path. If path is not complete, returns min key
 # for most matching path.
 def key_for_path(path)
+    if key_field
+    	key = key_field.to_sym
+	else
+	    key = :id
+	end
+
+    detail = detail_for_path(path)
+    return redatil[key]
+end
+
+def detail_for_path(path)
+
+    # FIXME: rewrite this, use some abstraction - do not refer to workspace connection
+    
 	level_index = 0
 	conditions = Array.new
-    # puts "==> GET KEY FOR PATH: #{path}"
+
     hierarchy = default_hierarchy
     levels = hierarchy.levels
     
 	path.each { |level_value|
 		level_column = levels[level_index].key_field.to_sym
 		conditions << {:column =>level_column, :value => level_value}	
-		# puts "LEVEL #{level_index}: #{level_column} = #{level_value}"
 		level_index = level_index + 1
 	}
-
-	level_name = levels[level_index-1].name
 	
 	# FIXME: this is valid only while there is only Sequel implementatin of datasets
-	data = @dataset.table
+	data = Brewery::workspace.connection[@table.to_sym]
 	
 	conditions.each { |cond|
 		if cond[:value] != :all
@@ -247,18 +258,15 @@ def key_for_path(path)
 	else
 	    key = :id
 	end
-	fields = [key].concat(fields_for_level(level_name))
-
+	fields = [key].concat(all_fields)
+    fields = fields.collect { |field| field.to_sym }
 	data = data.clone(:order => [key])
 	data = data.clone(:select => fields)
-	# puts "==> SQL: #{data.sql}"
+	puts "==> SQL: #{data.sql}"
 	# puts "--- fields: #{fields}"
 	first = data.first
-	if first
-		return first[key]
-	else
-		return nil
-	end
+
+    return first
 end
 
 # Return path which is one level below given path. If no path is provided, return path to
@@ -305,6 +313,16 @@ def fields_for_level(level)
         raise "Level '#{level_name}' does not exist in dimension '#{name}'"
 	end
 	return nil
+end
+
+def all_fields
+    fields = []
+    # FIXME: Do not use default hierarchy, pass hierarchy as argument
+    default_hierarchy.levels.each { |level|
+        fields.concat(level.level_fields)
+    }
+    
+    return fields
 end
 
 # Return name of key field for level @level
