@@ -150,7 +150,8 @@ end
 
 def create_select_expression
     @selected_fields = {}
-    selections = []
+    # FIXME: do this for all fact fields
+    selections = ["#{@fact_alias}.id"]
 
     # 1. cube fields
     @cube.fact_fields.each { |field|

@@ -269,8 +269,26 @@ def detail_for_path(path)
     return first
 end
 
+
 # Return path which is one level below given path. If no path is provided, return path to
 # first level. If path at last level is provided, return same path.
+def next_level(path)
+	# FIXME: check validity of path
+	# validate_path(path)
+
+	hier = default_hierarchy
+	if !path || path.empty?
+		return hier.levels[0]
+	end
+	
+	next_level = path.count
+	if next_level >= hier.levels.count
+		return nil
+	end
+	
+	return hier.levels[next_level]
+end
+
 def next_level(path)
 	# FIXME: check validity of path
 	# validate_path(path)

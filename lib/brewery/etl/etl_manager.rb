@@ -32,10 +32,16 @@ attr_reader :log
 attr_reader :etl_files
 attr_accessor :debug
 
-def initialize(connection)
-	# FIXME: use brewery_etl
-	DataMapper.setup(:default, connection)
+@@__default_manager = nil
 
+def self.default_manager
+	if !@@__default_manager
+		@@__default_manager = self.new
+	end
+	return @@__default_manager
+end
+
+def initialize
 	@job_search_path = Array.new
     @log = Brewery::logger
 	# FIXME: document this
@@ -51,14 +57,6 @@ def initialize(connection)
 	# check_etl_schema
 end
 
-def check_etl_schema
-	@@system_tables.each {|table|
-		if not @connection.table_exists?(table)
-			raise RuntimeError, "ETL database schema is not initialized. Table #{table} is missing"
-		end
-	}
-
-end
 ################################################################
 # Initialization
 

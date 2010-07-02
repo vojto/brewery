@@ -77,12 +77,10 @@ def load_configuration
 	if !@configuration
 		raise "Brewery environment is not configured"
 	end
-
-	@connection_info = @configuration["connection"]
 end
 
 def create_etl_manager
-    @etl_manager = ETLManager.new(@connection_info)
+    @etl_manager = ETLManager.new
     if @debug
         @etl_manager.debug = true
     end
