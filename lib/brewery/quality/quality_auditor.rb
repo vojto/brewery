@@ -91,9 +91,10 @@ def audit_field(field)
 	# ...
 	# return hash with keys: total_count, null_count, not_null_count, 
 	# distinct_count, duplicates_count
-	if !@connection.table_exists?(@table_name)
-		raise RuntimeError, "Table #{@table_name} does not exist"
-	end
+	# FIXME: this does not work for postgres if there is search path
+	# if !@connection.table_exists?(@table_name)
+	#	raise RuntimeError, "Table #{@table_name} does not exist"
+	# end
 
 	table = @connection[@table_name]
 

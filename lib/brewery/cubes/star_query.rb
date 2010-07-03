@@ -5,7 +5,8 @@ module Brewery
 class StarQuery
 
 attr_accessor :fact_table
-attr_accessor :order
+attr_accessor :order_by
+attr_accessor :order_direction
 attr_accessor :page
 attr_accessor :page_size
 
@@ -113,8 +114,21 @@ def sql_for_records
     exprs << join_expression
     exprs << "WHERE #{where_expression}"
     
-    if @order
-        exprs << "ORDER BY #{@order}"
+    if @order_by
+        field = field_reference(@order_by)
+        if @order_direction
+            case @order_direction.to_s.downcase
+            when "asc", "ascending"
+                direction = "ASC"
+            when "desc", "descending"
+                direction = "DESC"
+            else
+                raise ArgumentError, "Unknown order direction '{@order_direction}'"
+            end
+        else
+            direction = "ASC"
+        end
+        exprs << "ORDER BY #{field} #{direction}"
     end
 
     if @page
@@ -197,6 +211,26 @@ def create_where_expression
 	}
 
     return filters.join(" AND ")
+end
+
+def field_reference(field_string)
+    string = field_string.to_s
+    split = string.split(".")
+    # raise "#{split.class} : '#{split.join('#')}' : '#{field_string}'"
+    if split.count == 2
+        # format: dim.field => [0] - dimension name, [1] - field name
+        dim = @cube.dimension_with_name(split[0])
+        dim_alias = alias_for_dimension(dim)
+        ref = "#{dim_alias}.#{split[1]}"
+    else
+        # format: field => [0] - field name
+        ref = "#{@fact_alias}.#{split[0]}"
+    end
+    return ref
+end
+
+def alias_for_dimension(dimension)
+    return @dimension_aliases[dimension]
 end
 
 end # class StarQuery

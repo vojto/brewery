@@ -596,7 +596,8 @@ def facts(options = {})
 		query.add_cut(cut)
 	}
     
-    query.order = options[:order]
+    query.order_by = options[:order_by]
+    query.order_direction = options[:order_direction]
     query.page = options[:page]
     query.page_size = options[:page_size]
     

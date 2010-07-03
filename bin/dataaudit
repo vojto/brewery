@@ -112,9 +112,10 @@ def run
 		raise RuntimeError, "Unable to create connection #{store_name}"
 	end
 	
-	if !connection.table_exists?(table_name.to_sym)
-		raise RuntimeError, "Table #{table_name} does not exist in data store #{store_name}"
-	end
+	# FIXME: this does not work with postgres using schema search path
+	# if !connection.table_exists?(table_name.to_sym)
+	# 	raise RuntimeError, "Table #{table_name} does not exist in data store #{store_name}"
+	# end
 	
 	@auditor.connection = connection
 	@auditor.table_name = table_name.to_sym
