@@ -6,26 +6,24 @@ class BreweryCubesTest < Test::Unit::TestCase
 include Brewery
 
 def setup
-    DataMapper.setup(:default, 'sqlite3::memory:')
-    DataMapper.auto_migrate!
-
-
 	manager = Brewery::data_store_manager
 	manager.add_data_store(:default, "sqlite::memory:")
-	# manager.add_data_store(:default, "postgres://localhost/sandbox")
+
 	@connection = manager.create_connection(:default)
 
+    Brewery::set_brewery_datastore(:default)
+    Brewery::initialize_brewery_datastore
+    Brewery::create_default_workspace(@connection)
+    
 	create_date_dimension
 	create_category_dimension
 	create_example_data
 	define_dimensions
 	
-	@product_dataset = Dataset.dataset_from_database_table(@connection[:ft_product])
 	create_cube
 end
 
 def define_dimensions
-	dataset = Dataset.dataset_from_database_table(@connection[:dm_date])
     dim = Dimension.new( { :name => :date ,
                            :levels =>  [
                                 {:name => :year, :level_fields => [:year] },
@@ -40,10 +38,8 @@ def define_dimensions
     hier.levels = [:year, :month, :day]
     hier.save
     dim.table = :dm_date
-    dim.dataset = dataset
 	@date_dimension = dim
 	
-	dataset = Dataset.dataset_from_database_table(@connection[:dm_category])
     dim = Dimension.new( { :name => :category ,
                            :levels => [ { :name => :category, :level_fields => [:category_code, :category] } ]
                            } )
@@ -52,15 +48,14 @@ def define_dimensions
     hier = dim.create_hierarchy(:default)
     hier.levels = [:category]
     hier.save
-	dim.dataset = dataset
 	dim.table = :dm_category
 
 	@category_dimension = dim
 
 	# Add dimensions to workspace
-	ws = Workspace.default_workspace
-	ws.add_dimension(:date, @date_dimension)
-	ws.add_dimension(:category, @category_dimension)
+	# ws = Workspace.default_workspace
+	# ws.add_dimension(:date, @date_dimension)
+	# ws.add_dimension(:category, @category_dimension)
 end
 
 def test_from_hash_and_file
@@ -187,7 +182,6 @@ end
 
 def create_cube
 	@cube = Cube.new
-	@cube.dataset = @product_dataset
 	@cube.join_dimension(@date_dimension, :date_id)
 	@cube.join_dimension(@category_dimension, :category)
 	@cube.fact_table = :ft_product
@@ -196,14 +190,14 @@ end
 def test_dimension
 	dim = @date_dimension
 
-	level = dim.drill_down_level(nil)
+	level = dim.next_level(nil)
 	assert_equal("year", level.name)
 
-	level = dim.drill_down_level([2009, 10])
+	level = dim.next_level([2009, 10])
 	assert_equal("day", level.name)
 
-	level = dim.drill_down_level([2009, 10, 1])
-	assert_equal("day", level.name)
+	level = dim.next_level([2009, 10, 1])
+	assert_equal(nil, level)
 	
 	path = dim.roll_up_path([2009, 10])
 	assert_equal([2009], path)
@@ -251,7 +245,7 @@ def test_date_dimension
 end
 
 def test_cube
-	
+
 	result = @cube.whole.aggregate(:amount)
 	assert_equal([], result.rows)
 	assert_not_nil([], result.summary)

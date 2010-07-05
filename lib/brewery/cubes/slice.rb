@@ -361,7 +361,7 @@ def aggregate(measure, options = {})
     ################################################
 	# 7. Compute summary
 
-    puts "SQL: #{statement}"
+    # Brewery::logger.debug "slice SQL: #{statement}"
 
     if !@summaries[measure]
         summary_data = Brewery.workspace.execute_sql(summary_statement)

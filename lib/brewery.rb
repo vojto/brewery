@@ -79,7 +79,6 @@ module Brewery
 @@logger = nil
 @@debug = false
 
-
 # Get default data store manager. Short-cut for {DataStoreManager#default_manager}
 def self.data_store_manager
 	return DataStoreManager::default_manager
@@ -229,6 +228,10 @@ end
 
 def self.logger
 	return @@logger
+end
+
+def logger
+	return Brewery::logger
 end
 
 end # module

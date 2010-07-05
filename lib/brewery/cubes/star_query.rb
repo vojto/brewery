@@ -45,10 +45,9 @@ end
 def record(detail_id)
     statement = sql_for_detail(detail_id)
 
-    puts "==> SQL: #{statement}"
+    # logger.info "detail SQL: #{statement}"
 
     dataset = Brewery.workspace.execute_sql(statement)
-    puts "==> count: #{dataset.count}"
     
     record = dataset.first
     hash = {}
@@ -68,7 +67,7 @@ end
 def records
     statement = sql_for_records
 
-    puts "==> SQL: #{statement}"
+    # logger.debug "records SQL: #{statement}"
 
     dataset = Brewery.workspace.execute_sql(statement)
     
@@ -171,7 +170,7 @@ def create_select_expression
     @cube.fact_fields.each { |field|
         field_name = field.name
         @selected_fields[field_name] = field_name
-        selections << field_name
+        selections << "#{@fact_alias}.#{field_name} AS #{field_name}"
     }
     
     # 2. dimension fields

@@ -178,7 +178,7 @@ def list_of_values(path)
 	level = default_hierarchy.levels[level_index]
 
 	# FIXME: this is valid only while there is only Sequel implementatin of datasets
-	data = @dataset.table
+	data = Brewery.workspace.connection[table.to_sym]
 	
 	conditions.each { |cond|
 		if cond[:value] != :all
@@ -222,7 +222,7 @@ def key_for_path(path)
 	end
 
     detail = detail_for_path(path)
-    return redatil[key]
+    return detail[key]
 end
 
 def detail_for_path(path)
