@@ -113,6 +113,9 @@ end
 # @option options [Symbol] :limit_aggregation Which aggregation is used for determining limit
 # @option options [Number] :limit_value Limit value based on limit_type 
 # @option options [Symbol] :limit_sort Possible values: `:ascending`, `:descending`
+# @option options [Symbol] :order_direction How to order aggregated fields
+# @option options [Symbol] :page Used for pagination of results.
+# @option options [Symbol] :page_size Size of page for paginated results
 # == Examples:
 # * aggregate(:amount, { :row_dimension => [:date], :row_levels => [:year, :month]} )
 # @return [AggregationResult] object with aggregation summary and rows where each
@@ -296,6 +299,12 @@ def aggregate(measure, options = {})
 
     # FIXME: this should definitely go to StarSchema
     page = options[:page]
+    limit = options[:limit]
+
+    if page and limit
+        raise ArgumentError, "You should not use :page and :limit options at the same time. (Developer's note: Ta bud jedno alebo druhe more, ale ne obe)" 
+    end
+    
     if page
         page_size = options[:page_size]
         limit_statement = " LIMIT #{page_size} OFFSET #{page * page_size}"
@@ -304,9 +313,6 @@ def aggregate(measure, options = {})
 
     ################################################
 	# 6. Set limits
-
-    
-    limit = options[:limit]
 
     if limit
         limit_aggregation = options[:limit_aggregation]
