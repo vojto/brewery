@@ -1,5 +1,7 @@
 module Brewery
 require 'brewery/cubes/fact_field'
+require 'brewery/core/dataset_description'
+require 'brewery/core/field_description'
 
 class Model
     include DataMapper::Resource
@@ -8,6 +10,7 @@ class Model
     property :name, String
     property :description, Text
 
+    has      n, :dataset_descriptions, {:through=>DataMapper::Resource}
     has      n, :dimensions,  {:through=>DataMapper::Resource}
     has      n, :cubes, {:through=>DataMapper::Resource}
 
@@ -24,6 +27,7 @@ end
 
 # Load model from a directory specified by _path_. The directory should contain:
 # * model.yml - model information
+# * dataset_*.yml - dataset description
 # * dim_*.yml - dimension specifications
 # * cube_*.yml - cube specifications
 # @param [String, Pathname] Directory with model files
@@ -39,13 +43,15 @@ def load_from_path(path)
 	self.name = hash[:name]
 	self.description = hash[:description]
 	
+	ds_files = Array.new
 	dim_files = Array.new
 	cube_files = Array.new
 	
 	path.children.each { | file |
 	    prefix = file.basename.to_s.split('_')[0]
-	    # puts "CREATING #{prefix} from #{file}"
 	    case prefix
+        when "dataset"
+            ds_files << file
 	    when "dim", "dimension"
 	        dim_files << file
         when "cube"
@@ -53,20 +59,36 @@ def load_from_path(path)
 	    end
 	}
 
+    ds_files.each {|file|
+        ds = DatasetDescription.new_from_file(file)
+        dataset_descriptions << ds
+    }
+
     dim_files.each {|file|
         dim = Dimension.new_from_file(file)
         dimensions << dim
     }
     self.save
+
     cube_files.each {|file|
         load_cube_from_file(file)
     }
+    
+    self.save
+
+    # Assign datasets
+    cubes.each { |cube|
+        ds_name = cube.dataset_name
+        dataset = dataset_descriptions.first(:name => ds_name)
+        cube.dataset_description = dataset
+#        cube.save
+    }   
 end
 
 def load_cube_from_file(file)
 	hash = YAML.load_file(file)
 	hash = hash.hash_by_symbolising_keys
-    # puts "==> cube from #{file}"
+    puts "==> cube from #{file}"
     # puts "--> dims: #{dimensions.class}"
     cube = Cube.new
 
@@ -74,7 +96,8 @@ def load_cube_from_file(file)
 	cube.label = hash[:label]
 	cube.description = hash[:description]
 	cube.fact_table = hash[:fact_table]
-    
+	cube.dataset_name = hash[:dataset_name]
+
     cubes << cube
     
     dim_joins = hash[:dimensions]
@@ -89,12 +112,15 @@ def load_cube_from_file(file)
         cube.join_dimension(dim, join_info[:fact_key])
     }
     
+    # FIXME: depreciate - replace with dataset description/field description
     fact_fields = hash[:fields]
-    
-    fact_fields.each { |field_info|
-        field = cube.fact_fields.new(field_info)
-        puts "Added field: #{field.name}"
-    }
+
+    if fact_fields    
+        fact_fields.each { |field_info|
+            field = cube.fact_fields.new(field_info)
+            puts "Added field: #{field.name}"
+        }
+    end
 end
 
 # Returns model with given name
@@ -109,6 +135,11 @@ end
 # Returns cube with given name
 def cube_with_name(name)
     return cubes.first( :name => name )
+end
+
+# Returns dataset description with given name
+def dataset_description_with_name(name)
+    return dataset_descriptions.first( :name => name )
 end
 
 end # class

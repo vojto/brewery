@@ -1,4 +1,5 @@
 require 'brewery/cubes/fact_field'
+require 'brewery/core/dataset_description'
 
 module Brewery
 class Cube
@@ -10,10 +11,14 @@ class Cube
 	property :label, String
 	property :description, Text
 	property :fact_table, String
+    property :dataset_name, String
 
     has n, :models,  {:through=>DataMapper::Resource}
     has n, :cube_dimension_joins
     has n, :dimensions,  :through => :cube_dimension_joins
+    belongs_to :dataset_description, :required => false
+
+    # @depreciated
     has n, :fact_fields
 
 # FIXME: remove this
@@ -113,7 +118,12 @@ def fact(fact_id)
 end
 
 def field_with_name(field_name)
-    return fact_fields.first(:name => field_name)
+    return dataset_description.field_with_name(field)
+#    return fact_fields.first(:name => field_name)
+end
+
+def field_description(field)
+    return dataset_description.field_with_name(field)
 end
 
 def label_for_field(field_name)

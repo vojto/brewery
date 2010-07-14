@@ -49,8 +49,6 @@ def test_description
 	cube = Cube.new
     assert_not_nil(cube)
     cube.dataset_description = desc
-    
-    
 end
 
 

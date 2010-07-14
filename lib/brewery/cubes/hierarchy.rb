@@ -22,6 +22,7 @@ class Hierarchy
     has        n, :hierarchy_levels, :order => [ :order.asc ]
 
 def levels=(array)
+    self.save
     self.hierarchy_levels.destroy
     @levels = Array.new
 

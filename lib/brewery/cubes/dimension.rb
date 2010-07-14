@@ -2,6 +2,7 @@ require 'rubygems'
 require 'sequel'
 require 'data_objects'
 require 'brewery/cubes/dimension_level'
+require 'brewery/core/dataset_description'
 
 module Brewery
 
@@ -39,6 +40,7 @@ class Dimension
 
     has n, :cubes, :through => :cube_dimension_joins
     has n, :cube_dimension_joins
+    belongs_to :dataset_description, :required => false
 
 # Dimension label
 # @todo Make localizable
@@ -90,6 +92,7 @@ def self.new_from_hash(from_hash)
 			level.label = level_info[:label]
             # puts "FIELDS: #{level_info[:fields]}"
 			level.level_fields = level_info[:fields]
+			level.description_field = level_info[:description_field]
 			level.name = level_name
 			dim.levels << level
 		}
@@ -113,9 +116,7 @@ def self.new_from_hash(from_hash)
 end
 
 def create_hierarchy(name)
-    hier = Hierarchy.new( { :name => name } )
-    hierarchies << hier
-    hier.save
+    hier = hierarchies.new( { :name => name } )
     return hier
 end
 

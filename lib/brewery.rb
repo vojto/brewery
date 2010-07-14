@@ -35,6 +35,8 @@ require 'brewery/core/hierarchy_tree'
 require 'brewery/core/dataset'
 require 'brewery/core/data_store_manager'
 require 'brewery/core/data_table'
+require 'brewery/core/dataset_description'
+require 'brewery/core/field_description'
 
 require 'brewery/core/downloader'
 require 'brewery/core/download_batch'
@@ -201,11 +203,13 @@ end
 # Warning: This is destructive operation
 def self.initialize_brewery_datastore
 	# FIXME: this is destructive!
+    DataMapper.finalize
 	DataMapper.auto_migrate!
 end
 
 # Upgrade datastore structures (database tables) used by brewery to match current brewery structure
 def self.upgrade_brewery_datastore
+    DataMapper.finalize
 	DataMapper.auto_upgrade!
 end
 

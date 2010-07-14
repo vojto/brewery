@@ -167,7 +167,8 @@ def create_select_expression
     selections = ["#{@fact_alias}.id"]
 
     # 1. cube fields
-    @cube.fact_fields.each { |field|
+    # @cube.fact_fields.each { |field|
+    @cube.dataset_description.field_descriptions.each { |field|
         field_name = field.name
         @selected_fields[field_name] = field_name
         selections << "#{@fact_alias}.#{field_name} AS #{field_name}"
