@@ -107,6 +107,12 @@ def dimension_with_name(name)
 end
 
 def fact(fact_id)
+	query = create_star_query
+
+	return query.record(fact_id)
+end
+
+def create_star_query
 	query = StarQuery.new(self)
 
 	dimensions.each { |dimension|
@@ -114,7 +120,7 @@ def fact(fact_id)
 		query.join_dimension(dimension, join.dimension_key, join.fact_key)
 	}
 
-	return query.record(fact_id)
+    return query
 end
 
 def field_with_name(field_name)

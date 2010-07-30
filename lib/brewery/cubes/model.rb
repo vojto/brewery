@@ -118,7 +118,7 @@ def load_cube_from_file(file)
     if fact_fields    
         fact_fields.each { |field_info|
             field = cube.fact_fields.new(field_info)
-            puts "Added field: #{field.name}"
+            # puts "Added field: #{field.name}"
         }
     end
 end

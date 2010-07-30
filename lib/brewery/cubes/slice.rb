@@ -121,7 +121,7 @@ end
 # @return [AggregationResult] object with aggregation summary and rows where each
 #   row represents a point at row_dimension if specified.
 # @todo Rewrite this to use StarSchema - reuse code
-def aggregate(measure, options = {})
+def aggregate_old(measure, options = {})
     # FIXME: rewrite this to use StarSchema
 # t = Time.now
     if options[:row_dimension]
@@ -455,7 +455,7 @@ def aggregate(measure, options = {})
     
     # Compute remainder
     
-    if limit
+    if limit && summary[:sum]
         remainder = Hash.new
         remainder[:sum] = summary[:sum] - r_sum
         remainder[:record_count] = summary[:record_count] - rows.count
@@ -475,118 +475,93 @@ def aggregate(measure, options = {})
     return results
 end
 
-# @return Dataset (database table) containing fact details from the cube cut
-def details
-	table_alias = "t"
+def aggregate(measure, options = {})
 
-    ################################################
-	# 0. Collect tables to be joined
-
-	dimension_aliases = Hash.new
-	all_dimensions = Array.new
-
-	dims = @cuts.collect { |cut| cut.dimension }
-	all_dimensions.concat(dims)
-	all_dimensions = all_dimensions.uniq
-	
-	i = 0
-    all_dimensions.each { |dimension|
-    	if dimension_aliases[dimension]
-    		next
-    	end
-    	dimension_aliases[dimension] = "d#{i}"
-        i += 1
-    }
-
-    ################################################
-	# 1. What needs to be SELECTed
-
-	selections = Array.new	
+    query = create_star_query(options)
+    query.prepare_for_aggregation(measure, options)
+    query.computed_fields = @computed_fields
     
-    # Row fields - from dimension
-    selections << "#{table_alias}.*"
-
-	
     ################################################
-	# 2. Filters - for WHERE clausule
-	filters = Array.new
-	
-	@cuts.each { |cut|
-	    # puts "CUT #{cut.class}"
-		if !cut.dimension
-		    raise RuntimeError, "No dimension in cut (#{cut.class}), slicing cube '#{@cube.name}'"
-		end
-		dimension = @cube.dimension_object(cut.dimension)
-		if !dimension
-		    raise RuntimeError, "No cut dimension '#{cut.dimension.name}' in cube '#{@cube.name}'"
-		end
-		dim_alias = dimension_aliases[dimension]
-		# puts "==> WHERE COND CUT: #{cut.dimension} DIM: #{dimension} ALIAS: #{dim_alias}"
-		filters << cut.sql_condition(dimension, dim_alias)
-	}
+	# 7. Compute summary
 
-    ################################################
-	# 4. Join
+    # Brewery::logger.debug "slice SQL: #{statement}"
 
-	joins = Array.new
+    if !@summaries[measure]
+        summary_data = query.aggregation_summary
 
-	all_dimensions.each { |dimension|
-		dim_alias = dimension_aliases[dimension]
-        join = @cube.join_for_dimension(dimension)
-        # puts "JOIN FOR DIM: '#{dim_alias}' #{dimension}(#{dimension.class}): #{join.fact_key}=#{join.dimension_key}"
+        summary = Hash.new
 
-        joins << dimension.sql_join_expression(join.dimension_key,
-                                               join.fact_key,
-                                               dim_alias, table_alias)
-	}
+        if options[:operators]
+            aggregations = options[:operators]
+        else
+            aggregations = [:sum]
+        end
 
-    ################################################
-	# 5. Create SQL SELECT statement
-	
-	select_expr = selections.join(', ')
-	
-	join_expr = joins.join(' ')
-	
-	if filters && filters.count > 0
-		joined_filters = filters.join(' AND ')
-		filter_expr = "WHERE #{joined_filters}"
-	else
-		filter_expr = ''
-	end
-	
-	table_name = @cube.fact_table
-	if !table_name
-	    raise RuntimeError, "No fact table name specified for cube '#{@cube.name}'"
-	end
-	
-	statement = "SELECT #{select_expr}
-				FROM #{table_name} #{table_alias}
-				#{join_expr}
-				#{filter_expr}"
+        aggregations.each { |agg|
+            field = query.aggregated_field_name(measure, agg).to_sym
+            value = summary_data[field]
+    
+            # FIXME: use appropriate type (Sequel SQLite returns String)
+            if value.class == String
+                value = value.to_f
+            end
+            summary[agg] = value
+    	}
+    	
+        value = summary_data[:record_count]
+        if value.class == String
+            value = value.to_f
+        end
+        summary[:record_count] = value
+
+    	@summaries[measure] = summary
+    else
+        summary = @summaries[measure]
+    end
 
     ################################################
-	# 6. Execute statement
+	# 8. Execute main selection
 
-	# puts "SQL: #{statement}"
-        
-    dataset = Brewery.workspace.execute_sql(statement)
+    if query.is_drill_down
+        query.aggregate_drill_down_rows
+        rows = query.rows
+        r_sum = query.row_sum
+    else
+        # Only summary
+        rows = Array.new
+        r_sum = 0
+    end
+    
+    # Compute remainder
+    
+    if query.has_limit
+        puts "==> COMPUTING REMAINDER FROM: #{summary[:sum].to_f} AND #{r_sum.to_f} AND #{rows.count}"
+        remainder = Hash.new
+        remainder[:sum] = summary[:sum] - r_sum
+        remainder[:record_count] = summary[:record_count] - rows.count
+        puts "==> GOT SUM: #{remainder}"
+    else
+        puts "==> NO REMAINDER"
+        remainder = nil
+    end
+    
+# puts "==> ELAPSED COLLECT: #{Time.now - t}"
 
-    return dataset
+    results = AggregationResult.new
+    results.rows = rows
+    results.aggregation_options = options
+    results.measure = measure
+    results.remainder = remainder
+    results.summary = @summaries[measure]
+    
+    return results
 end
 
-def facts(options = {})
-	query = StarQuery.new(@cube)
+def create_star_query(options = {})
+	query = @cube.create_star_query
 
     ################################################
-	# 0. Collect tables to be joined
-
-	@cube.dimensions.each { |dimension|
-        join = @cube.join_for_dimension(dimension)
-		query.join_dimension(dimension, join.dimension_key, join.fact_key)
-	}
-	
-    ################################################
-	# 2. Filters - for WHERE clausule
+	# 1. Apply cuts
 	
 	@cuts.each { |cut|
 		if !cut.dimension
@@ -607,6 +582,12 @@ def facts(options = {})
     query.page = options[:page]
     query.page_size = options[:page_size]
     
+    return query
+end
+
+def facts(options = {})
+	query = create_star_query(options)
+
     return query.records
 end
 

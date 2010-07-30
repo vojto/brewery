@@ -143,6 +143,17 @@ def default_hierarchy
     return hier
 end
     
+# == Returns:
+# Level containing attribute
+def level_for_attribute(attribute)
+    levels.each { |level|
+        if level.level_fields.include?(attribute)
+            return level
+        end
+    }
+    return nil
+end
+        
 # Returns values of hierarchy level which follows the last level in given path.
 #
 # == Example:
@@ -161,6 +172,7 @@ end
 # == Returns:
 # Array of records as hashes.
 #
+# @todo Move SQL stuff to star-schema
 def list_of_values(path)
 	# 2009 -> all months
 	# 2009, 2 -> all days
@@ -172,7 +184,7 @@ def list_of_values(path)
     	level = default_hierarchy.levels[level_index]
 	
 		conditions << {:column =>level.key_field.to_sym, :value => level_value}	
-		# puts "LEVEL #{level}: #{level_column} = #{level_value}"
+		# puts "LEVEL #{level.name}: #{level.key_field.to_sym} = #{level_value}"
 		level_index += 1
 	}
 
@@ -195,8 +207,8 @@ def list_of_values(path)
 	level_key = level.key_field.to_sym
 	#str = level_fields.collect{|f| f.to_s.lit}.join(',')
 	# data = data.group(level_fields).order(level_fields)
-	data = data.clone(:group => [level_key])
-	data = data.clone(:order => [level_key])
+	data = data.clone(:group => level_fields)
+	data = data.clone(:order => level_fields)
 	data = data.clone(:select => level_fields)
     # puts "==> PATH: #{path}"
 	# puts "--- SQL: #{data.sql}"
