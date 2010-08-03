@@ -173,6 +173,7 @@ end
 # Array of records as hashes.
 #
 # @todo Move SQL stuff to star-schema
+# @todo Make this work for dimensions without table
 def list_of_values(path)
 	# 2009 -> all months
 	# 2009, 2 -> all days
@@ -397,17 +398,6 @@ def roll_up_path(path)
 	up_path = path.dup
 	up_path.delete_at(-1)
 	return up_path
-end
-
-# FIXME: temporary SQL functions
-def sql_join_expression(dimension_field, fact_field, dimension_alias, table_alias)
-	# FIXME: may cause issues with schemas
-	table_name = table
-
-	join_expression = "JOIN #{table_name} #{dimension_alias} " +
-						"ON (#{dimension_alias}.#{dimension_field} = #{table_alias}.#{fact_field})"
-
-	return join_expression
 end
 
 def to_hash

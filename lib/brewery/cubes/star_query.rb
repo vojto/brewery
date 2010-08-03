@@ -55,13 +55,6 @@ def records
 
     dataset = Brewery.workspace.execute_sql(statement)
     
-#    record = dataset.first
-#    hash = {}
-#    if record
-#        @selected_fields.each { |key, value| 
-#            hash[value] = record[key.to_sym]
-#        }        
-#    end
     # FIXME: should not we return nil instead, if there is no record?
     return dataset
 end
