@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s| 
   s.name = "brewery"
-  s.version = "0.2.0"
+  s.version = "0.3.0"
   s.author = "Stefan Urbanek"
   s.email = "stefan@knowerce.sk"
   s.homepage = "http://github.com/Stiivi/brewery/"
