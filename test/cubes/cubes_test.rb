@@ -324,6 +324,11 @@ def test_cuts
     assert_equal(300, result.rows[0][:revenue_sum])
     assert_equal(300, result.remainder[:sum])
     assert_equal(2, result.remainder[:record_count])
+
+    # Agregate with no data found (non-existant dimension point)
+	slice = @cube.whole.cut_by_point(:date, [1980])
+    result = slice.aggregate(:revenue)
+    assert_equal(0, result.summary[:sum])
 end
 
 def test_detail

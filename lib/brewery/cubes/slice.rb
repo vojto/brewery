@@ -181,13 +181,10 @@ def aggregate(measure, options = {})
     # Compute remainder
     
     if query.has_limit
-        puts "==> COMPUTING REMAINDER FROM: #{summary[:sum].to_f} AND #{r_sum.to_f} AND #{rows.count}"
         remainder = Hash.new
         remainder[:sum] = summary[:sum] - r_sum
         remainder[:record_count] = summary[:record_count] - rows.count
-        puts "==> GOT SUM: #{remainder}"
     else
-        puts "==> NO REMAINDER"
         remainder = nil
     end
     
@@ -244,23 +241,6 @@ def add_computed_field(field_name, &block)
     
     @computed_fields[field_name] = block
 end
-
-
-# @private
-def sql_field_aggregate(field, operator, alias_name)
-    sql_operators = {:sum => "SUM", :count => "COUNT", :average => "AVG", :min => "MIN", :max => "MAX"}
-
-    sql_operator = sql_operators[operator]
-
-    # FIXME: add this to unit testing
-    if !sql_operator
-        raise RuntimeError, "Unknown aggregation operator '#{operator}'"
-    end
-        
-    expression = "#{sql_operator}(#{field}) AS #{alias_name}"
-    return expression
-end
-
 
 end # class Slice
 end # module Brewery
