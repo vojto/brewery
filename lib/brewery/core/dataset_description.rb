@@ -7,8 +7,11 @@ class DatasetDescription
 
 	property :id, Serial
 
-    # Name of a table, file or any other object containing structured data
+    # Name of dataset
 	property :name, String
+
+    # Name of a table, file or any other object containing structured data
+	property :object_name, String
 
     # Human readable label. If label is not defined, dataset name is used instead.
 	property :label, String
@@ -21,8 +24,7 @@ class DatasetDescription
 	
     has n, :field_descriptions
 
-    has n, :cubes
-    has n, :models, {:through=>DataMapper::Resource}
+    has n, :logical_models, {:through=>DataMapper::Resource}
     
 def self.new_from_file(path)
 	hash = YAML.load_file(path)
@@ -37,6 +39,7 @@ def self.new_from_hash(hash)
 
     desc = self.new
     desc.name = hash[:name]
+    desc.object_name = hash[:object_name]
     desc.label = hash[:label]
     desc.description = hash[:description]
     desc.data_store_name = hash[:data_store_name]
@@ -59,8 +62,8 @@ def label
     return string
 end
     
-def field_with_name
-	return field_descriptions.first( :name => level_name )
+def field_with_name(field_name)
+	return field_descriptions.first( :name => field_name )
 end
 
 end # class
