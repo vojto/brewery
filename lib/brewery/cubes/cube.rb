@@ -1,4 +1,4 @@
-require 'brewery/cubes/fact_field'
+require 'brewery/cubes/dataset_join'
 require 'brewery/core/dataset_description'
 
 module Brewery
@@ -10,21 +10,52 @@ class Cube
 	property :name, String, :default => 'unnamed cube'
 	property :label, String
 	property :description, Text
-	property :fact_table, String
-    property :dataset_name, String
+	property :fact_dataset_name, String
 
-    has n, :models,  {:through=>DataMapper::Resource}
-    has n, :cube_dimension_joins
-    has n, :dimensions,  :through => :cube_dimension_joins
-    belongs_to :dataset_description, :required => false
+    belongs_to :logical_model
+    has n, :dimensions, {:through=>DataMapper::Resource}
+    has      n, :joins, { :model => DatasetJoin }
 
-    # @depreciated
-    has n, :fact_fields
+def validate
+    results = []
 
-# FIXME: remove this
-attr_accessor :workspace
+    if !fact_dataset_name
+        results << [:error, "No fact dataset name specified for cube '#{name}'"]
+    end
+    
+    if !fact_dataset
+        results << [:error, "Unable to find fact dataset '#{fact_dataset_name}' for cube '#{name}'"]
+    end
 
-# @private
+    dimensions.each { | dim |
+        dim.levels.each { |level|
+            level.level_fields.each { |field|
+                ref = field_reference(field)
+                ds = logical_model.dataset_description_with_name(ref[0])
+                if !ds
+                    results << [:error, "Unknown dataset '#{ref[0]}' for field '#{field}', dimension '#{dim.name}', level '#{level.name}', cube '#{name}'"]
+                else
+                    fd = ds.field_with_name(ref[1])
+                    if !fd
+                        results << [:error, "Unknown field '#{ref[0]}.#{ref[1]}' in dimension '#{dim.name}', level '#{level.name}', cube '#{name}'"]
+                    end
+                end
+            }
+        }
+    }
+
+    return results
+end
+
+def field_reference(field)
+    split = field.split('.')
+    if split.count == 1
+        ref = [fact_dataset_name, field]
+    else
+        ref = [split[0], split[1]]
+    end
+    return ref
+end
 
 def aggregate(measure)
 	return @whole.aggregate(measure)
@@ -37,40 +68,12 @@ def whole
 	return @whole
 end
 
-# Join dimension to cube
-#
-# == Parameters:
-# dimension::
-#   Dimension to be joined.
-# fact_key_field::
-#   Name of key field in cube dataset/table to be used on join with dimension.
-#
-def join_dimension(dimension, fact_key_field)
-	if !dimension
-		raise RuntimeError, "Dimension shoul not be nil"
-	end
-
-	join = CubeDimensionJoin.new
-	join.fact_key = fact_key_field
-	join.dimension_key = dimension.key_field
-
-	self.cube_dimension_joins << join
-	dimension.cube_dimension_joins << join
-	join.save
-end
-
-# Provide dimension join information
-def join_for_dimension(dimension)
-    # FIXME: flush cache on attribute update
-	if !@cached_joins
-		@cached_joins = Hash.new
-	end
-	join = @cached_joins[dimension]
-	if !join
-		join = cube_dimension_joins.first( :dimension => dimension, :cube => self )
-		@cached_joins[dimension] = join
-	end
-	return join
+# Return dataset description representing fact
+def fact_dataset
+    if !@fact_dataset
+        @fact_dataset = logical_model.dataset_description_with_name(fact_dataset_name)
+    end
+    return @fact_dataset
 end
 
 # Return dimension object. If dim is String or Hash then find named dimension.
@@ -85,7 +88,7 @@ def dimension_object(dimension)
     end
 
 	if !obj
-		raise RuntimeError, "Cube '#{self.name}' has no joined dimension '#{dimension}'"
+		raise RuntimeError, "Cube '#{self.name}' has no dimension '#{dimension}'"
 	end
 
 	return obj
@@ -114,11 +117,6 @@ end
 
 def create_star_query
 	query = StarQuery.new(self)
-
-	dimensions.each { |dimension|
-        join = join_for_dimension(dimension)
-		query.join_dimension(dimension, join.dimension_key, join.fact_key)
-	}
 
     return query
 end

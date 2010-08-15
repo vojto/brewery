@@ -61,7 +61,7 @@ require 'brewery/cubes/cube_dimension_join'
 require 'brewery/cubes/slice'
 require 'brewery/cubes/cut'
 require 'brewery/cubes/workspace'
-require 'brewery/cubes/model'
+require 'brewery/cubes/logical_model'
 require 'brewery/cubes/hierarchy'
 require 'brewery/cubes/star_query'
 

@@ -28,55 +28,33 @@ class Dimension
 
 	property :id, Serial
 	property :name, String
+
+    # Human-readable dimension label
+    # @todo Make localizable
 	property :label, String
+
+    # More detailed description of the dimension
 	property :description, Text
-	property :key_field, String, {:default => "id"}
-	property :table, String
 	property :default_hierarchy_name, String
 
     has n, :levels, { :model => DimensionLevel }
 	has n, :hierarchies #, {:through=>DataMapper::Resource} # default hierarchy
-    has n, :models,  {:through=>DataMapper::Resource}
+    has n, :cubes, {:through=>DataMapper::Resource}
+    belongs_to :logical_model
 
-    has n, :cubes, :through => :cube_dimension_joins
-    has n, :cube_dimension_joins
-    belongs_to :dataset_description, :required => false
 
-# Dimension label
-# @todo Make localizable
-# attr_accessor :label
-
-# Dimension hierarchy - array of field names that define hierarchy.
-# attr_accessor :hierarchy
-
-# Hash of hierarchy levels in the form: level => [fields]
-# attr_accessor :levels
-
-# More detailed description of the dimension
-# attr_accessor :description
-
-# Dataset (table) that contains dimension values
-attr_reader :dataset
-# Key field
-attr_accessor :key_field
-
-def self.new_from_file(path)
+def initialize_from_file(path)
 	hash = YAML.load_file(path)
-	if !hash
-		return nil
-	end
-	return self.new_from_hash(hash)
+	return initialize_from_hash(hash)
 end
 
-def self.new_from_hash(from_hash)
+def initialize_from_hash(from_hash)
 	
 	hash = from_hash.hash_by_symbolising_keys
 
-	dim = Dimension.new
-	dim.name = hash[:name]
-	dim.label = hash[:label]
-	dim.description = hash[:description]
-	dim.table = hash[:table]
+	self.name = hash[:name]
+	self.label = hash[:label]
+	self.description = hash[:description]
 
 	new_levels = hash[:levels]
 	if new_levels.class != Hash
@@ -94,11 +72,13 @@ def self.new_from_hash(from_hash)
 			level.level_fields = level_info[:fields]
 			level.description_field = level_info[:description_field]
 			level.name = level_name
-			dim.levels << level
+			self.levels << level
 		}
 	end
 	
-	dim.save
+	if !self.save
+	    raise "Unable to save dimension"
+	end
 	
 	hiers = hash[:hierarchies]
 
@@ -106,13 +86,13 @@ def self.new_from_hash(from_hash)
     	hiers = hiers.hash_by_symbolising_keys
         hiers.each { |hier_name, hier_info|
             hier_info = hier_info.hash_by_symbolising_keys
-            hier = dim.create_hierarchy(hier_name)
+            hier = self.create_hierarchy(hier_name)
             hier.levels = hier_info[:levels]
             hier.save
         }
     end
 	
-	return dim
+	return self
 end
 
 def create_hierarchy(name)

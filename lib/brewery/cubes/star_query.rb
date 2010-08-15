@@ -25,9 +25,74 @@ attr_reader :row_sum
 def initialize(cube)
     @cube = cube
     @joins = Hash.new
-    @fact_alias = 'ft'
-    @fact_table = cube.fact_table
+    @fact_dataset_name = cube.fact_dataset.name
+    @fact_table_name = cube.fact_dataset.object_name
+    @fact_alias = @fact_dataset_name
     @cuts = []
+end
+
+def table_for_dataset(dataset_name)
+    dataset = @cube.logical_model.dataset_description_with_name(dataset_name)
+    table = dataset.object_name
+    return table
+end
+
+def create_join_expression
+    expressions = Array.new
+
+    joins = @cube.joins
+    
+    joins.each { |join|
+        master_table = table_for_dataset(join.master_dataset_name)
+        detail_table = table_for_dataset(join.detail_dataset_name)
+        master_key = join.master_key
+        detail_key = join.detail_key
+
+        expr = "JOIN "
+        expr << "#{detail_table} #{join.detail_dataset_name} "
+        expr << "ON (#{join.detail_dataset_name}.#{detail_key} = #{join.master_dataset_name}.#{master_key})"
+        expressions << expr
+        puts "==> #{expr}"
+    }
+    if expressions.empty?
+        @join_expression = ""
+    else
+        @join_expression = expressions.join("\n")
+    end
+end
+
+def create_select_expression
+    @selected_fields = {}
+    # FIXME: do this for all fact fields
+    selections = ["#{@fact_dataset_name}.id"]
+
+    # 1. cube fields
+    # @cube.fact_fields.each { |field|
+    @cube.fact_dataset.field_descriptions.each { |field|
+        field_name = field.name
+        @selected_fields[field_name] = field_name
+        selections << "#{@fact_dataset_name}.#{field_name} AS #{field_name}"
+    }
+    
+    # 2. dimension fields
+    dimensions.each { |dim|
+        array = []
+        i = 0
+        dim_alias = @dimension_aliases[dim]
+        dim.levels.each { |level|
+            level.level_fields.each { |field|
+                field_alias = "#{dim.name}.#{field}"
+                @selected_fields[field_alias] = "#{dim.name}.#{field}"
+                selections << "#{dim_alias}.#{field} AS " + quote_field(field_alias)
+            }
+        }
+        field = dim.key_field
+                field_alias = "#{dim.name}.#{field}"
+        @selected_fields[field_alias] = "#{dim.name}.#{field}"
+        selections << "#{dim_alias}.#{field} AS " + quote_field(field_alias)
+    }
+
+    @select_expression = selections.join(', ')
 end
 
 def record(detail_id)
@@ -63,22 +128,6 @@ def add_cut(cut)
     @cuts << cut
 end
 
-def join_dimension(dimension, dim_key, fact_key)
-    if dimension.class != Dimension
-        raise ArgumentError, "Dimension object required for join in star query"
-    end
-    
-    @joins[dimension] = { :dimension => dimension, 
-                                :dimension_key => dim_key,
-                                :fact_key => fact_key
-                                }
-    
-end
-
-def dimensions
-    return @joins.collect { | key, value | value[:dimension] }    
-end
-
 def create_dimension_aliases
     @dimension_aliases = Hash.new
     i = 0
@@ -95,7 +144,7 @@ def sql_for_detail(detail_id)
     # FIXME: sanitize id, make key column name configurable (now it is id)
     exprs = Array.new
     exprs << "SELECT #{@select_expression}"
-    exprs << "FROM #{@fact_table} AS #{@fact_alias} "
+    exprs << "FROM #{@fact_table_name} AS #{@fact_alias} "
     exprs << @join_expression
     exprs << "WHERE #{@fact_alias}.id = #{detail_id}"
     
@@ -113,7 +162,7 @@ def sql_for_records
     
     exprs = Array.new
     exprs << "SELECT #{@select_expression}"
-    exprs << "FROM #{@fact_table} AS #{@fact_alias} "
+    exprs << "FROM #{@fact_table_name} AS #{@fact_alias} "
     exprs << @join_expression
     if @condition_expression
         exprs << "WHERE #{@condition_expression}"
@@ -171,7 +220,6 @@ def prepare_for_aggregation(measure, options = {})
 
     if options[:row_dimension]
         row_dimension = @cube.dimension_object(options[:row_dimension])
-        row_dimension_alias = dimension_alias(row_dimension)
     else
         row_dimension = nil
     end
@@ -217,11 +265,9 @@ def prepare_for_aggregation(measure, options = {})
         row_levels.each{ |level|
             level_fields = row_dimension.fields_for_level(level)
             level_fields.each { |field|
-                # field_alias = dimension_field_alias(row_dimension, field)
-                # FIXME: remove this, historical remainder
-                field_alias = field
-                @selected_fields[field_alias] = field
-                row_selections << "#{row_dimension_alias}.#{field} AS " + quote_field(field_alias)
+                # @selected_fields[field_alias] = field
+                ref = field_reference(field)
+                row_selections << field_reference(field)
             }
         }
     end
@@ -235,7 +281,7 @@ def prepare_for_aggregation(measure, options = {})
             level = row_dimension.level_with_name(level_name)
             level.level_fields.each { |field| 
                 # level_key = row_dimension.key_field_for_level(level)
-                group_fields << "#{row_dimension_alias}.#{field}"
+                group_fields << field_reference(field)
             }
         }
 
@@ -249,7 +295,7 @@ def prepare_for_aggregation(measure, options = {})
     select_expression = selections.join(', ')
     summary_exprs = Array.new
     summary_exprs << "SELECT #{select_expression}"
-    summary_exprs << "FROM #{@fact_table} AS #{@fact_alias} "
+    summary_exprs << "FROM #{@fact_table_name} AS #{@fact_alias} "
     summary_exprs << @join_expression
 
     if @condition_expression
@@ -262,7 +308,7 @@ def prepare_for_aggregation(measure, options = {})
         select_expression = row_selections.join(', ')
         drill_exprs = Array.new
         drill_exprs << "SELECT #{select_expression}"
-        drill_exprs << "FROM #{@fact_table} AS #{@fact_alias} "
+        drill_exprs << "FROM #{@fact_table_name} AS #{@fact_alias} "
         drill_exprs << @join_expression
         if @condition_expression
             drill_exprs << "WHERE #{@condition_expression}"
@@ -279,7 +325,7 @@ def prepare_for_aggregation(measure, options = {})
                 level = row_dimension.level_with_name(level_name)
                 level.level_fields.each { |field| 
                     # level_key = row_dimension.key_field_for_level(level)
-                    order_fields << "#{row_dimension_alias}.#{field}"
+                    order_fields << field_reference(field)
                 }
             }
             order_expr = order_fields.join(', ')
@@ -354,13 +400,13 @@ def prepare_for_aggregation(measure, options = {})
 end
 
 def aggregation_summary
-    # puts "SUMMARY SQL: #{@summary_statement}"
+    puts "SUMMARY SQL: #{@summary_statement}"
     dataset = Brewery.workspace.execute_sql(@summary_statement)
     return dataset.first
 end
 
 def aggregate_drill_down_rows
-    # puts "DRILLDOWN SQL: #{@drill_statement}"
+    puts "DRILLDOWN SQL: #{@drill_statement}"
     dataset = Brewery.workspace.execute_sql(@drill_statement)
 
     sum_field_name = aggregated_field_name(@measure, :sum)
@@ -369,16 +415,16 @@ def aggregate_drill_down_rows
     @row_sum = 0
     @rows = Array.new
     dataset.each { |record|
-        result_row = Hash.new
+        result_row = record.dup
 
-        @aggregations.each { |agg|
-            agg_field = aggregated_field_name(@measure, agg).to_sym
-            result_row[agg_field] = record[agg_field]
-        }
-
-        @selected_fields.each { |key, value| 
-            result_row[value.to_sym] = record[key.to_sym]
-        }        
+#         @aggregations.each { |agg|
+#             agg_field = aggregated_field_name(@measure, agg).to_sym
+#             result_row[agg_field] = record[agg_field]
+#         }
+# 
+#         @selected_fields.each { |key, value| 
+#             result_row[value.to_sym] = record[key.to_sym]
+#         }        
 
         # puts "==> ROW #{result_row}"
 
@@ -399,8 +445,6 @@ def aggregate_drill_down_rows
     }
 end
 
-
-
 def sql_field_aggregate(field, operator, alias_name)
     sql_operators = {:sum => "SUM", :count => "COUNT", :average => "AVG", :min => "MIN", :max => "MAX"}
 
@@ -413,61 +457,6 @@ def sql_field_aggregate(field, operator, alias_name)
         
     expression = "#{sql_operator}(#{field}) AS #{alias_name}"
     return expression
-end
-
-def create_join_expression
-    create_dimension_aliases
-
-    expressions = Array.new
-    dimensions.each { |dim|
-        dim_alias = @dimension_aliases[dim]
-        join = @joins[dim]
-        dim_field = join[:dimension_key]
-        fact_field = join[:fact_key]
-        expr = "JOIN "
-        expr << "#{dim.table} #{dim_alias} "
-        expr << "ON (#{dim_alias}.#{dim_field} = #{@fact_alias}.#{fact_field})"
-        expressions << expr
-    }
-    if expressions.empty?
-        @join_expression = ""
-    else
-        @join_expression = expressions.join("\n")
-    end
-end
-
-def create_select_expression
-    @selected_fields = {}
-    # FIXME: do this for all fact fields
-    selections = ["#{@fact_alias}.id"]
-
-    # 1. cube fields
-    # @cube.fact_fields.each { |field|
-    @cube.dataset_description.field_descriptions.each { |field|
-        field_name = field.name
-        @selected_fields[field_name] = field_name
-        selections << "#{@fact_alias}.#{field_name} AS #{field_name}"
-    }
-    
-    # 2. dimension fields
-    dimensions.each { |dim|
-        array = []
-        i = 0
-        dim_alias = @dimension_aliases[dim]
-        dim.levels.each { |level|
-            level.level_fields.each { |field|
-                field_alias = "#{dim.name}.#{field}"
-                @selected_fields[field_alias] = "#{dim.name}.#{field}"
-                selections << "#{dim_alias}.#{field} AS " + quote_field(field_alias)
-            }
-        }
-        field = dim.key_field
-                field_alias = "#{dim.name}.#{field}"
-        @selected_fields[field_alias] = "#{dim.name}.#{field}"
-        selections << "#{dim_alias}.#{field} AS " + quote_field(field_alias)
-    }
-
-    @select_expression = selections.join(', ')
 end
 
 def dimension_field_alias(dimension, field)
@@ -502,20 +491,9 @@ def create_condition_expression
 
     @condition_expression = filters.join(" AND ")
 end
-
 def field_reference(field_string)
-    string = field_string.to_s
-    split = string.split(".")
-    if split.count == 2
-        # format: dim.field => [0] - dimension name, [1] - field name
-        dim = @cube.dimension_with_name(split[0])
-        dim_alias = dimension_alias(dim)
-        ref = "#{dim_alias}.#{split[1]}"
-    else
-        # format: field => [0] - field name
-        ref = "#{@fact_alias}.#{split[0]}"
-    end
-    return ref
+    ref = @cube.field_reference(field_string)
+    return "#{ref[0]}.#{ref[1]}"
 end
 
 def aggregated_field_name(field, aggregation)
