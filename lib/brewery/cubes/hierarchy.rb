@@ -60,6 +60,22 @@ def levels
     return @levels
 end
 
+def next_level(path)
+	# FIXME: check validity of path
+	# validate_path(path)
+
+	if !path || path.empty?
+		return levels[0]
+	end
+	
+	next_level = path.count
+	if next_level >= levels.count
+		return nil
+	end
+	
+	return levels[next_level]
+end
+
 end # class Hierarchy
 
 end # module

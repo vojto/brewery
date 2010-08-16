@@ -62,9 +62,9 @@ def create_join_expression
     end
 end
 
-def create_select_expression
+def create_detail_select_expression
     @selected_fields = {}
-    # FIXME: do this for all fact fields
+
     selections = ["#{@fact_dataset_name}.id"]
 
     # 1. cube fields
@@ -76,21 +76,20 @@ def create_select_expression
     }
     
     # 2. dimension fields
-    dimensions.each { |dim|
+    @cube.dimensions.each { |dim|
         array = []
         i = 0
-        dim_alias = @dimension_aliases[dim]
         dim.levels.each { |level|
             level.level_fields.each { |field|
-                field_alias = "#{dim.name}.#{field}"
-                @selected_fields[field_alias] = "#{dim.name}.#{field}"
-                selections << "#{dim_alias}.#{field} AS " + quote_field(field_alias)
+                ref = field_reference(field)
+                selections << "#{ref} AS " + quote_field(ref)
             }
         }
-        field = dim.key_field
-                field_alias = "#{dim.name}.#{field}"
-        @selected_fields[field_alias] = "#{dim.name}.#{field}"
-        selections << "#{dim_alias}.#{field} AS " + quote_field(field_alias)
+        if dim.key_field
+            field = dim.key_field
+            ref = field_reference(field)
+            selections << "#{ref} AS " + quote_field(ref)
+        end
     }
 
     @select_expression = selections.join(', ')
@@ -140,7 +139,7 @@ end
 
 def sql_for_detail(detail_id)
     create_join_expression
-    create_select_expression    
+    create_detail_select_expression    
 
     # FIXME: sanitize id, make key column name configurable (now it is id)
     exprs = Array.new
@@ -156,7 +155,7 @@ end
 # @returns SQL to fetch records within given cuts
 def sql_for_records
     create_join_expression
-    create_select_expression    
+    create_detail_select_expression    
     
     # FIXME: select expression field names are incosistent with field names for one record
     create_condition_expression
@@ -418,17 +417,6 @@ def aggregate_drill_down_rows
     dataset.each { |record|
         result_row = record.dup
 
-#         @aggregations.each { |agg|
-#             agg_field = aggregated_field_name(@measure, agg).to_sym
-#             result_row[agg_field] = record[agg_field]
-#         }
-# 
-#         @selected_fields.each { |key, value| 
-#             result_row[value.to_sym] = record[key.to_sym]
-#         }        
-
-        # puts "==> ROW #{result_row}"
-
         # Add computed fields
         if @computed_fields && !@computed_fields.empty?
             @computed_fields.each { |field, block|
@@ -445,6 +433,85 @@ def aggregate_drill_down_rows
         @rows << result_row
     }
 end
+
+# FIXME: XXX Continue here
+
+def dimension_values_at_path(dimension, path)
+    create_join_expression
+
+    ################################################
+    # 1. Select Fields
+
+    # FIXME: Use more
+    hierarchy = dimension.default_hierarchy
+
+    conditions = []
+    full_levels = []
+    path.each_index { |i|
+        value = path[i]
+        level = hierarchy.levels[i]
+        if value == :all
+            full_levels << level 
+        else
+            ref = field_reference(level.key_field)
+            quoted_value = quote_value(path[i])
+            conditions << "#{ref} = #{quoted_value}"	
+        end
+    }
+
+    full_levels << hierarchy.next_level(path)
+
+    ################################################
+    # 2. Selections 
+    selections = []
+    hierarchy.levels.each { |level|
+        level.level_fields.each { |field|
+            ref = field_reference(field)
+            selections << field_reference(field)
+        }
+    }
+    select_expression = selections.join(', ')
+
+    ################################################
+    # 3. Groupings
+
+    groupings = []
+    full_levels.each { |level|
+        level.level_fields.each { |field|
+            ref = field_reference(field)
+            groupings << field_reference(field)
+        }
+    }
+
+    group_expression = groupings.join(', ')
+
+
+    ################################################
+    # 4. Create core SQL SELECT statements: summary and standard
+
+    exprs = Array.new
+    exprs << "SELECT #{select_expression}"
+    exprs << "FROM #{@fact_table_name} AS #{@fact_alias} "
+    exprs << @join_expression    
+
+    if conditions.count > 0
+        condition_expression = conditions.join(' AND ')
+        exprs << "WHERE #{condition_expression}"
+    end
+    
+    exprs << "GROUP BY #{group_expression}"    
+
+    create_order_by_expression
+    exprs << @order_by_expression    
+
+    statement = exprs.join("\n")
+
+    # puts "SQL: STATEMENT: #{statement}"
+    dataset = Brewery.workspace.execute_sql(statement)
+
+    return dataset
+end
+
 
 def sql_field_aggregate(field, operator, alias_name)
     sql_operators = {:sum => "SUM", :count => "COUNT", :average => "AVG", :min => "MIN", :max => "MAX"}
@@ -486,11 +553,6 @@ def create_condition_expression
             raise RuntimeError, "No cut dimension '#{cut.dimension.name}' in cube '#{@cube.name}'"
         end
 
-# raise "FIXME: continue here, see source code for notes"
-
-# 1. we need to move cut SQL condition here
-
-        # dim_alias = @dimension_aliases[dimension]
         filters << filter_condition_for_cut(cut)
     }
 
@@ -527,13 +589,13 @@ def filter_condition_for_cut(cut)
         
         return cond_expression
     when RangeCut
-        raise "Unhandled range cut"
-        dimension_key = cut.dimension.key_field
-        if !dimension_key
-            dimension_key = :id
+        range_key = cut.dimension.key_field
+        if !range_key
+            raise ArgumentError, "Dimension has no key field (required for ranged cuts)"
         end
-        condition = "#{dimension_alias}.#{dimension_key} BETWEEN #{from_key} AND #{to_key}"	
-        return condition
+        ref = field_reference(range_key)
+        cond_expression = "#{ref} BETWEEN #{cut.from_key} AND #{cut.to_key}"	
+        return cond_expression
     when SetCut
         raise "Unhandled set cut"
     else

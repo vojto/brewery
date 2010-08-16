@@ -52,7 +52,7 @@ def test_model_loading
     assert_not_nil(model)
 
     validation_results = model.validate
-    assert_equal(0, validation_results.count)
+    assert_equal([], validation_results)
     
     assert_equal(1, model.cubes.count)    
     assert_equal(2, model.dimensions.count)

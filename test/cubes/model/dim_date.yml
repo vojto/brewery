@@ -1,5 +1,6 @@
 name: date
 label: Dátum
+key_field: date.id
 levels:
     year:
         label: Rok
@@ -16,9 +17,6 @@ levels:
         fields:
             - date.day
             - date.week_day
-            - date.week_day_name
-            - date.week_day_sname
-            - date.id
 hierarchies:
     default:
         levels:

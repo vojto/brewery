@@ -3,6 +3,8 @@ object_name: dm_date
 label: Date
 fields:
     -
+        name: id
+    -
         name: year
     -
         name: month
@@ -14,7 +16,3 @@ fields:
         name: day
     -
         name: week_day
-    -
-        name: week_day_name
-    -
-        name: week_day_sname

@@ -32,10 +32,10 @@ def create_example_data
 		@connection.drop_table(@date_dim_table)
 	end
 
-	month_names = ["January", "February", "March", "April", "May", "June", 
+	@month_names = ["January", "February", "March", "April", "May", "June", 
 				   "July", "August", "September", "October", "November", "December"]
 
-	month_snames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+	@month_snames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
 				   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 	@connection.create_table(@date_dim_table) do
@@ -58,8 +58,8 @@ def create_example_data
 			:id => date.strftime('%Y%m%d'),
 			:year => date.year,
 			:month => date.month,
-			:month_name => month_names[date.month-1],
-			:month_sname => month_snames[date.month-1],
+			:month_name => @month_names[date.month-1],
+			:month_sname => @month_snames[date.month-1],
 			:week_day => date.wday,
 			:day => date.day
 		}
@@ -158,35 +158,38 @@ def test_dimension
 
 end
 
-def test_date_dimension
+def test_dimension_value_list
 	dim = @date_dimension
 
-	years = dim.list_of_values([])
-	assert_equal([2009, 2010, 2011, 2012], years.collect {|r| r[:year] })
+    slice = @cube.whole
 
-	months2009 = dim.list_of_values([2009]).collect {|r| r[:month] }
-	months2010 = dim.list_of_values([2010]).collect {|r| r[:month] }
-	months2011 = dim.list_of_values([2010]).collect {|r| r[:month] }
-	months2012 = dim.list_of_values([2012]).collect {|r| r[:month] }
-	months_any = dim.list_of_values([:all]).collect {|r| r[:month] }
+	years = slice.dimension_values_at_path(:date, [])
+	assert_equal([2010], years.collect {|r| r[:year] })
+
+	months2009 = slice.dimension_values_at_path(:date, [2009]).collect {|r| r[:month] }
+	months2010 = slice.dimension_values_at_path(:date, [2010]).collect {|r| r[:month] }
+	months2011 = slice.dimension_values_at_path(:date, [2011]).collect {|r| r[:month] }
+	months2012 = slice.dimension_values_at_path(:date, [2012]).collect {|r| r[:month] }
+	months_any = slice.dimension_values_at_path(:date, [:all]).collect {|r| r[:month] }
 	
-	assert_equal([6,7,8,9,10,11,12], months2009)
-	assert_equal(12, months2010.count)
-	assert_equal(months2010, months2011)
-	assert_equal(months2010, months_any)
-	assert_equal([1,2,3,4,5,6], months2012)
+	assert_equal([], months2009)
+	assert_equal([1, 2, 3, 4], months2010)
+	assert_equal([], months2011)
+	assert_equal([], months2012)
 
-	months2010 = dim.list_of_values([2010])
+	months2010 = slice.dimension_values_at_path(:date, [2010]).collect {|r| r }
 	assert_equal("January", months2010[0][:month_name])
 
- 	days_jan10 = dim.list_of_values([2010, 1]).collect {|r| r[:day] }
-	assert_equal(31, days_jan10.count)
+ 	days_jan10 = slice.dimension_values_at_path(:date, [2010, 1]).collect {|r| r[:day] }
+	assert_equal(2, days_jan10.count)
 
- 	# days_jan = dim.list_of_values([:all, 1]).collect {|r| r[:day] }
-	# assert_equal(31, days_jan.count)
+    # Test ordering
+    
+    # Yeah, ordering months by name useless, but can be used for testing
+	values = slice.dimension_values_at_path(:date, [2010], { :order_by => "date.month_name" })
+	values = values.collect { |r| r[:month_name] }
+	assert_equal(["April", "February", "January", "March"], values)
 
- 	# all_days = dim.list_of_values([:all, :all]).collect {|r| r[:day] }
-	# assert_equal(31, all_days.count)
 end
 
 def test_cube
@@ -257,11 +260,35 @@ def test_detail
 	slice = @cube.whole.cut_by_point(:date, [2010])
     assert_equal(7, slice.facts.count)
     								   
-	from_key = @date_dimension.key_for_path([2010,1,1])
-	to_key = @date_dimension.key_for_path([2010,2,3])
+	from_key = 20100101
+	to_key = 20100203
 
 	slice = @cube.whole.cut_by_range(:date, from_key, to_key)
-    assert_equal(3, slice.facts.count)
+	facts = slice.facts
+    assert_equal(3, facts.count, "Slice fact count does not match")
+    
+    first = facts.first
+    record = {
+        :id=>1,
+        :category=>"new",
+        :product=>"foo",
+        :revenue=>100,
+        :amount=>10,
+        :"category.category_code"=>"new",
+        :"category.category"=>"New stuff",
+        :"date.year"=>2010,
+        :"date.month"=>1,
+        :"date.month_name"=>"January",
+        :"date.month_sname"=>"Jan",
+        :"date.day"=>1,
+        :"date.week_day"=>5,
+        :"date.id"=>20100101
+    }
+    
+    flag = first.keys.detect{ |key| key.class != Symbol }
+    assert_equal(nil, flag, "All kets should be symbols")
+    assert_equal(first.keys.sort, record.keys.sort, "Returned keys do not match expected keys")
+    assert_equal(first, record, "returned record does not match expected record")
 end
 
 end
