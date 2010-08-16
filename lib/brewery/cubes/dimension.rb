@@ -33,6 +33,10 @@ class Dimension
     # @todo Make localizable
 	property :label, String
 
+    # Dimension key field used for ranged cuts (historical remainder)
+    # @todo Remove, see http://github.com/Stiivi/brewery/issues#issue/10
+	property :key_field, String
+
     # More detailed description of the dimension
 	property :description, Text
 	property :default_hierarchy_name, String
@@ -55,6 +59,8 @@ def initialize_from_hash(from_hash)
 	self.name = hash[:name]
 	self.label = hash[:label]
 	self.description = hash[:description]
+
+    self.key_field = hash[:key_field]
 
 	new_levels = hash[:levels]
 	if new_levels.class != Hash
@@ -155,6 +161,8 @@ end
 # @todo Move SQL stuff to star-schema
 # @todo Make this work for dimensions without table
 def list_of_values(path)
+
+    raise "Depreciated. Use Slice#dimension_values_at_path"
 	# 2009 -> all months
 	# 2009, 2 -> all days
 	# 2009, :all -> all days for all months
