@@ -37,7 +37,7 @@ def validate
                 else
                     fd = ds.field_with_name(ref[1])
                     if !fd
-                        results << [:error, "Unknown field '#{ref[0]}.#{ref[1]}' in dimension '#{dim.name}', level '#{level.name}', cube '#{name}'"]
+                        results << [:error, "Unknown dataset field '#{ref[0]}.#{ref[1]}' specified in dimension '#{dim.name}', level '#{level.name}', cube '#{name}'"]
                     end
                 end
             }
