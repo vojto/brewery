@@ -206,19 +206,6 @@ def list_of_values(path)
 			
 end
 
-# Return dimension key for given path. If path is not complete, returns min key
-# for most matching path.
-def key_for_path(path)
-    if key_field
-    	key = key_field.to_sym
-	else
-	    key = :id
-	end
-
-    detail = detail_for_path(path)
-    return detail[key]
-end
-
 def detail_for_path(path)
 
     # FIXME: rewrite this, use some abstraction - do not refer to workspace connection

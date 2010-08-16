@@ -54,32 +54,12 @@ attr_accessor :path
 
 # @api private
 # @private
-def sql_condition(dimension, dimension_alias)
-	conditions = Array.new
-	level_index = 0
 
-    #FIXME: use more
-    hier = dimension.default_hierarchy
-
-    if !hier
-        raise RuntimeError, "Dimension has no hierarchy"
-    end
-
-	path.each { |level_value|
-		if level_value != :all
-			level = hier.levels[level_index]
-			level_column = level.key_field
-			quoted_value = quote_value(level_value)
-
-			conditions << "#{dimension_alias}.#{level_column} = #{quoted_value}"	
-		end
-		level_index = level_index + 1
-	}
-	
-	cond_expression = conditions.join(" AND ")
-	
-	return cond_expression
+def hierarchy
+    # FIXME: use more
+    return dimension.default_hierarchy
 end
+
 # @private
 def filter_dataset(dataset)
 	conditions = Array.new

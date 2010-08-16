@@ -1,0 +1,13 @@
+name: category
+label: Category
+levels:
+    category:
+        label: Product Category
+        fields:
+            - category.category_code
+            - category.category
+hierarchies:
+    default:
+        levels:
+            - category
+

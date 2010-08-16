@@ -1,0 +1,20 @@
+name: date
+object_name: dm_date
+label: Date
+fields:
+    -
+        name: year
+    -
+        name: month
+    -
+        name: month_name
+    -
+        name: month_sname
+    -
+        name: day
+    -
+        name: week_day
+    -
+        name: week_day_name
+    -
+        name: week_day_sname

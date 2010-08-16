@@ -7,6 +7,7 @@ module Brewery
 # FIXME: desperately requires refactoring!
 
 class StarQuery
+include DataObjects::Quoting
 
 attr_accessor :fact_table
 attr_accessor :order_by
@@ -52,7 +53,7 @@ def create_join_expression
         expr << "#{detail_table} #{join.detail_dataset_name} "
         expr << "ON (#{join.detail_dataset_name}.#{detail_key} = #{join.master_dataset_name}.#{master_key})"
         expressions << expr
-        puts "==> #{expr}"
+        # puts "==> #{expr}"
     }
     if expressions.empty?
         @join_expression = ""
@@ -400,13 +401,13 @@ def prepare_for_aggregation(measure, options = {})
 end
 
 def aggregation_summary
-    puts "SUMMARY SQL: #{@summary_statement}"
+    # puts "SUMMARY SQL: #{@summary_statement}"
     dataset = Brewery.workspace.execute_sql(@summary_statement)
     return dataset.first
 end
 
 def aggregate_drill_down_rows
-    puts "DRILLDOWN SQL: #{@drill_statement}"
+    # puts "DRILLDOWN SQL: #{@drill_statement}"
     dataset = Brewery.workspace.execute_sql(@drill_statement)
 
     sum_field_name = aggregated_field_name(@measure, :sum)
@@ -485,12 +486,61 @@ def create_condition_expression
             raise RuntimeError, "No cut dimension '#{cut.dimension.name}' in cube '#{@cube.name}'"
         end
 
-        dim_alias = @dimension_aliases[dimension]
-        filters << cut.sql_condition(dimension, dim_alias)
+# raise "FIXME: continue here, see source code for notes"
+
+# 1. we need to move cut SQL condition here
+
+        # dim_alias = @dimension_aliases[dimension]
+        filters << filter_condition_for_cut(cut)
     }
 
     @condition_expression = filters.join(" AND ")
 end
+
+def filter_condition_for_cut(cut)
+    conditions = []
+    
+    case cut
+    when PointCut
+        conditions = Array.new
+        level_index = 0
+    
+        #FIXME: use more
+        hier = cut.hierarchy
+    
+        if !hier
+            raise RuntimeError, "Cut or dimension has no hierarchy defined"
+        end
+    
+        cut.path.each { |level_value|
+            if level_value != :all
+                level = hier.levels[level_index]
+                ref = field_reference(level.key_field)
+                quoted_value = quote_value(level_value)
+    
+                conditions << "#{ref} = #{quoted_value}"	
+            end
+            level_index = level_index + 1
+        }
+        
+        cond_expression = conditions.join(" AND ")
+        
+        return cond_expression
+    when RangeCut
+        raise "Unhandled range cut"
+        dimension_key = cut.dimension.key_field
+        if !dimension_key
+            dimension_key = :id
+        end
+        condition = "#{dimension_alias}.#{dimension_key} BETWEEN #{from_key} AND #{to_key}"	
+        return condition
+    when SetCut
+        raise "Unhandled set cut"
+    else
+        raise ArgumentError, "Unknown cube cut class #{cut.class}"
+    end
+end
+
 def field_reference(field_string)
     ref = @cube.field_reference(field_string)
     return "#{ref[0]}.#{ref[1]}"

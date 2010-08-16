@@ -14,79 +14,19 @@ def setup
     Brewery::set_brewery_datastore(:default)
     Brewery::initialize_brewery_datastore
     Brewery::create_default_workspace(@connection)
-    
-	create_date_dimension
-	create_category_dimension
+
 	create_example_data
-	define_dimensions
-	
-	create_cube
+
+    model = Brewery::LogicalModel.model_from_path('model')
+    @cube = model.cube_with_name('test')
+    @date_dimension = @cube.dimension_with_name('date')
 end
 
-def define_dimensions
-    dim = Dimension.new( { :name => :date ,
-                           :levels =>  [
-                                {:name => :year, :level_fields => [:year] },
-                                {:name => :month, :level_fields => [:month, :month_name, :month_sname]},
-                                {:name => :day, :level_fields => [:day, :week_day]}
-                            ]
-                            } 
-                        )
+def create_example_data
 
-    dim.save
-    hier = dim.create_hierarchy(:default)
-    hier.levels = [:year, :month, :day]
-    hier.save
-    dim.table = :dm_date
-	@date_dimension = dim
-	
-    dim = Dimension.new( { :name => :category ,
-                           :levels => [ { :name => :category, :level_fields => [:category_code, :category] } ]
-                           } )
-    dim.key_field = "category_code"
-    dim.save
-    hier = dim.create_hierarchy(:default)
-    hier.levels = [:category]
-    hier.save
-	dim.table = :dm_category
-
-	@category_dimension = dim
-
-	# Add dimensions to workspace
-	# ws = Workspace.default_workspace
-	# ws.add_dimension(:date, @date_dimension)
-	# ws.add_dimension(:category, @category_dimension)
-end
-
-def test_from_hash_and_file
-    hash = 
-        {
-            :name => "date",
-            :levels => [
-                { :name => :year,  :level_fields => [:year] },
-                { :name => :month, :level_fields => [:month, :month_name, :month_sname]},
-                { :name => :day, :level_fields => [:day, :week_day, :week_day_name, :week_day_sname]}
-            ]
-        }
-    dim = Dimension.new(hash)
-    fields = dim.fields_for_level(:month)
-    assert_equal([:month, :month_name, :month_sname], fields)
-    # FIXME: TEST this
-    # assert_equal([:year, :month, :day], dim.default_hierarchy)
+    ################################################################
+    # Create date dimension
     
-    path = Pathname.new("model/date_dim.yml")
-    dim = Dimension.new_from_file(path)
-    
-    l = dim.levels.first( :name => "month" ).level_fields
-    
-    fields = dim.fields_for_level("month")
-    assert_not_nil(fields)
-    assert_equal(["month", "month_name", "month_sname"], fields)
-    assert_equal(["year", "month", "day"], dim.default_hierarchy.level_names)
-end
-
-def create_date_dimension
-
 	@date_dim_table = :dm_date
 	if @connection.table_exists?(@date_dim_table)
 		@connection.drop_table(@date_dim_table)
@@ -126,9 +66,10 @@ def create_date_dimension
 		date_dim.insert(record)
 		date = date + 1
 	end
-end
 
-def create_category_dimension
+    ################################################################
+    # Create category dimension table
+
 	@category_dim_table = :dm_category
 	if @connection.table_exists?(@category_dim_table)
 		@connection.drop_table(@category_dim_table)
@@ -149,9 +90,9 @@ def create_category_dimension
 	table = @connection[@category_dim_table]
 	table.multi_insert(values)
 
-end
+    ################################################################
+    # Create fact table
 
-def create_example_data
 	if @connection.table_exists?(:ft_sales)
 		@connection.drop_table(:ft_sales)
 	end
@@ -189,21 +130,6 @@ def create_example_data
             { name: 'amount' }
         ]
     }
-end
-
-def create_cube
-    @model = Model.new
-	@cube = Cube.new
-    @model.cubes << @cube
-	@cube.join_dimension(@date_dimension, :date_id)
-	@cube.join_dimension(@category_dimension, :category)
-	@cube.fact_table = :ft_sales
-
-    desc = DatasetDescription.new_from_hash(@cube_dataset)
-    @cube.dataset_description = desc
-
-    @model.save
-    @cube.save
 end
 
 def test_dimension
@@ -305,16 +231,7 @@ def test_cuts
     								   :row_levels => [:year, :month]})
     assert_equal(300, result.rows[0][:revenue_sum])
     								   
-	from_key = @date_dimension.key_for_path([2010,1,1])
-	assert_equal(20100101, from_key)
-	from_key = @date_dimension.key_for_path([2010,3])
-	assert_equal(20100301, from_key)
-	from_key = @date_dimension.key_for_path([2010])
-	assert_equal(20100101, from_key)
-
-	to_key = @date_dimension.key_for_path([2010,2,3])
-
-	slice = @cube.whole.cut_by_range(:date, from_key, to_key)
+	slice = @cube.whole.cut_by_range(:date, 20100100, 20100203)
     result = slice.aggregate(:revenue, {:row_dimension => :date, 
     			                      :row_levels => [:year, :month]})
     assert_equal(300, result.rows[0][:revenue_sum])
