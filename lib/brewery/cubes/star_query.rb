@@ -434,17 +434,16 @@ def aggregate_drill_down_rows
     }
 end
 
-# FIXME: XXX Continue here
-
 def dimension_values_at_path(dimension, path)
     create_join_expression
 
     ################################################
-    # 1. Select Fields
+    # 1. Conditions
 
     # FIXME: Use more
     hierarchy = dimension.default_hierarchy
-
+    last_level = hierarchy.next_level(path)
+    
     conditions = []
     full_levels = []
     path.each_index { |i|
@@ -459,15 +458,19 @@ def dimension_values_at_path(dimension, path)
         end
     }
 
-    full_levels << hierarchy.next_level(path)
+    # FIXME: chceck correctness of this:
+    ref = field_reference(last_level.key_field)
+    conditions << "#{ref} IS NOT NULL"	
+
+    full_levels << last_level
 
     ################################################
     # 2. Selections 
     selections = []
-    hierarchy.levels.each { |level|
+    full_levels.each { |level|
         level.level_fields.each { |field|
             ref = field_reference(field)
-            selections << field_reference(field)
+            selections << "#{ref} \"#{ref}\""
         }
     }
     select_expression = selections.join(', ')
@@ -506,10 +509,67 @@ def dimension_values_at_path(dimension, path)
 
     statement = exprs.join("\n")
 
-    # puts "SQL: STATEMENT: #{statement}"
+    puts "DIM VALUES SQL: #{statement}"
     dataset = Brewery.workspace.execute_sql(statement)
 
     return dataset
+end
+
+def dimension_detail_at_path(dimension, path)
+    create_join_expression
+
+    ################################################
+    # 1. Conditions
+
+    # FIXME: Use more
+    hierarchy = dimension.default_hierarchy
+
+    conditions = []
+    full_levels = []
+    path.each_index { |i|
+        value = path[i]
+        level = hierarchy.levels[i]
+        if value == :all
+            full_levels << level 
+        else
+            ref = field_reference(level.key_field)
+            quoted_value = quote_value(path[i])
+            conditions << "#{ref} = #{quoted_value}"	
+        end
+    }
+
+    full_levels << hierarchy.next_level(path)
+
+    ################################################
+    # 2. Selections 
+    selections = []
+    hierarchy.levels.each { |level|
+        level.level_fields.each { |field|
+            ref = field_reference(field)
+            selections << "#{ref} \"#{ref}\""
+        }
+    }
+    select_expression = selections.join(', ')
+
+    ################################################
+    # 4. Create core SQL SELECT statements: summary and standard
+
+    exprs = Array.new
+    exprs << "SELECT #{select_expression}"
+    exprs << "FROM #{@fact_table_name} AS #{@fact_alias} "
+    exprs << @join_expression    
+
+    if conditions.count > 0
+        condition_expression = conditions.join(' AND ')
+        exprs << "WHERE #{condition_expression}"
+    end
+    
+    statement = exprs.join("\n")
+
+    puts "DTETAIL VALUE SQL: #{statement}"
+    dataset = Brewery.workspace.execute_sql(statement)
+
+    return dataset.first
 end
 
 

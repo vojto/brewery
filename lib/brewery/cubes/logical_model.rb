@@ -68,7 +68,7 @@ def load_from_path(path)
     ds_files.each {|file|
         ds = DatasetDescription.new_from_file(file)
         dataset_descriptions << ds
-        # puts "--> Loaded dataset: #{ds.name}"
+        puts "--> Loaded dataset: #{ds.name}"
     }
 
     if !self.save

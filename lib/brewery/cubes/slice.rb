@@ -234,6 +234,12 @@ def dimension_values_at_path(dimension_ref, path, options = {})
     return query.dimension_values_at_path(dimension, path)
 end
 
+def dimension_detail_at_path(dimension_ref, path)
+    dimension = @cube.dimension_object(dimension_ref)
+    query = create_star_query
+    return query.dimension_detail_at_path(dimension, path)
+end
+
 def facts(options = {})
 	query = create_star_query(options)
 
