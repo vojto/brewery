@@ -30,7 +30,10 @@ def initialize(connection)
         @connection = connection
     end
 end
-
+# FIXME: make this execute_sql and the other one to be execute_select_sql
+def execute_sql_no_data(sql_statement)
+    @connection << sql_statement
+end
 def execute_sql(sql_statement)
     # FIXME: add logging and time measurement
     return @connection[sql_statement]

@@ -506,6 +506,22 @@ def dimension_values_at_path(dimension, path)
 
     return dataset
 end
+def create_dimension_field_index(index_table, dimension, level, field)
+    create_join_expression
+    
+    exprs = []
+    
+    exprs << "INSERT INTO #{index_table}"
+    exprs << "(dimension, dimension_id, level, level_id, level_key, field, value)"
+    exprs << "SELECT '#{dimension.name}', #{dimension.id}, '#{level.name}', #{level.id}, #{level.key_field}, '#{field}', #{field}"
+    exprs << "FROM #{@fact_table_name} AS #{@fact_alias} "
+    exprs << @join_expression    
+    exprs << "GROUP BY #{level.key_field}, #{field}"
+    statement = exprs.join("\n")
+    # puts "INDEX SQL: #{statement}"
+    dataset = Brewery.workspace.execute_sql_no_data(statement)
+end
+
 
 def dimension_detail_at_path(dimension, path)
     create_join_expression
@@ -521,6 +537,10 @@ def dimension_detail_at_path(dimension, path)
     path.each_index { |i|
         value = path[i]
         level = hierarchy.levels[i]
+        if ! level
+            raise RuntimeError, "No level number #{i} (count: #{hierarchy.levels.count}) in dimension #{dimension.name} hirerarchy #{hierarchy.name}. Path: #{path}"
+        end
+        
         if value == :all
             full_levels << level 
         else

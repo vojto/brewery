@@ -182,7 +182,8 @@ def aggregate(measure, options = {})
     
     if query.has_limit
         remainder = Hash.new
-        remainder[:sum] = summary[:sum] - r_sum
+        sumsum = summary[:sum]?summary[:sum] : 0
+        remainder[:sum] = sumsum - r_sum
         remainder[:record_count] = summary[:record_count] - rows.count
     else
         remainder = nil
