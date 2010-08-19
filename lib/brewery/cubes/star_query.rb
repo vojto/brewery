@@ -259,7 +259,7 @@ def prepare_for_aggregation(measure, options = {})
             level_fields.each { |field|
                 # @selected_fields[field_alias] = field
                 ref = field_reference(field)
-                row_selections << field_reference(field)
+                row_selections << "#{ref} \"#{ref}\""
             }
         }
     end
@@ -398,7 +398,7 @@ def aggregation_summary
 end
 
 def aggregate_drill_down_rows
-    # puts "DRILLDOWN SQL: #{@drill_statement}"
+    puts "DRILLDOWN SQL: #{@drill_statement}"
     dataset = Brewery.workspace.execute_sql(@drill_statement)
 
     sum_field_name = aggregated_field_name(@measure, :sum)
