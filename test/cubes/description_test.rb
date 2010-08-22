@@ -6,17 +6,16 @@ class BreweryCubeDescriptionTest < Test::Unit::TestCase
 include Brewery
 
 def setup
-#	manager = Brewery::data_store_manager
-#	manager.add_data_store(:default, "sqlite::memory:")
+	manager = Brewery::data_store_manager
+	manager.add_data_store(:default, "sqlite::memory:")
 
-#    Brewery::set_brewery_datastore(:default)
-#    Brewery::initialize_brewery_datastore
-#    Brewery::create_default_workspace(@connection)
-
-    Brewery::load_default_configuration
-    Brewery::set_brewery_datastore('stefan')
-
+    Brewery::set_brewery_datastore(:default)
     Brewery::initialize_brewery_datastore
+    Brewery::create_default_workspace(@connection)
+
+#    Brewery::load_default_configuration
+#    Brewery::set_brewery_datastore('stefan')
+#    Brewery::initialize_brewery_datastore
 
     @cube_dataset = {
         name: 'a_cube',

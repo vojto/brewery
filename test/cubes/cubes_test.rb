@@ -164,13 +164,13 @@ def test_dimension_value_list
     slice = @cube.whole
 
 	years = slice.dimension_values_at_path(:date, [])
-	assert_equal([2010], years.collect {|r| r[:year] })
+	assert_equal([2010], years.collect {|r| r[:"date.year"] })
 
-	months2009 = slice.dimension_values_at_path(:date, [2009]).collect {|r| r[:month] }
-	months2010 = slice.dimension_values_at_path(:date, [2010]).collect {|r| r[:month] }
-	months2011 = slice.dimension_values_at_path(:date, [2011]).collect {|r| r[:month] }
-	months2012 = slice.dimension_values_at_path(:date, [2012]).collect {|r| r[:month] }
-	months_any = slice.dimension_values_at_path(:date, [:all]).collect {|r| r[:month] }
+	months2009 = slice.dimension_values_at_path(:date, [2009]).collect {|r| r[:"date.month"] }
+	months2010 = slice.dimension_values_at_path(:date, [2010]).collect {|r| r[:"date.month"] }
+	months2011 = slice.dimension_values_at_path(:date, [2011]).collect {|r| r[:"date.month"] }
+	months2012 = slice.dimension_values_at_path(:date, [2012]).collect {|r| r[:"date.month"] }
+	months_any = slice.dimension_values_at_path(:date, [:all]).collect {|r| r[:"date.month"] }
 	
 	assert_equal([], months2009)
 	assert_equal([1, 2, 3, 4], months2010)
@@ -178,17 +178,23 @@ def test_dimension_value_list
 	assert_equal([], months2012)
 
 	months2010 = slice.dimension_values_at_path(:date, [2010]).collect {|r| r }
-	assert_equal("January", months2010[0][:month_name])
+	assert_equal("January", months2010[0][:"date.month_name"])
 
- 	days_jan10 = slice.dimension_values_at_path(:date, [2010, 1]).collect {|r| r[:day] }
+ 	days_jan10 = slice.dimension_values_at_path(:date, [2010, 1]).collect {|r| r[:"date.day"] }
 	assert_equal(2, days_jan10.count)
 
     # Test ordering
     
     # Yeah, ordering months by name useless, but can be used for testing
 	values = slice.dimension_values_at_path(:date, [2010], { :order_by => "date.month_name" })
-	values = values.collect { |r| r[:month_name] }
+	values = values.collect { |r| r[:"date.month_name"] }
 	assert_equal(["April", "February", "January", "March"], values)
+
+    options = { :order_by => "date.month_name", :page => 1, :page_size => 2 }
+	values = slice.dimension_values_at_path(:date, [2010], options)
+	values = values.collect { |r| r[:"date.month_name"] }
+	assert_equal(2, values.count)
+	assert_equal(["January", "March"], values)
 
 end
 

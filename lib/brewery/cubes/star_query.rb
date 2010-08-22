@@ -160,24 +160,17 @@ def sql_for_records
         exprs << "WHERE #{@condition_expression}"
     end
     
-    if @order_by
-        create_order_by_expression
-        exprs << @order_by_expression
-    end
+    create_order_by_expression
+    exprs << @order_by_expression
 
-    if @page
-        if !@page_size
-            raise ArgumentError, "No page size specified"
-        end
-        exprs << "LIMIT #{@page_size} OFFSET #{@page * @page_size}"
-    end
-    
+    create_pagination_expression
+    exprs << @pagination_expression
     
     statement = exprs.join("\n")
     return statement
 end
 
-def create_order_by_expression
+def create_order_by_expression(options = {})
     if @order_by
         field = field_reference(@order_by)
         if @order_direction
@@ -195,6 +188,14 @@ def create_order_by_expression
         @order_by_expression = "ORDER BY #{field} #{direction}"
     else
         @order_by_expression = ""
+    end
+end
+
+def create_pagination_expression
+    if @page
+        @pagination_expression = "LIMIT #{@page_size} OFFSET #{@page * @page_size}"
+    else
+        @pagination_expression = ""
     end
 end
 
@@ -325,10 +326,9 @@ def prepare_for_aggregation(measure, options = {})
         end
 
         # Paginate
-        if @page
-            limit_statement = "LIMIT #{@page_size} OFFSET #{@page * @page_size}"
-            drill_exprs << limit_statement
-        end
+
+        create_pagination_expression
+        drill_exprs << @pagination_expression
 
         @drill_statement = drill_exprs.join("\n")
     end
@@ -496,8 +496,11 @@ def dimension_values_at_path(dimension, path)
     
     exprs << "GROUP BY #{group_expression}"    
 
-    create_order_by_expression
+    create_order_by_expression(:default_order_by => last_level.key_field)
     exprs << @order_by_expression    
+
+    create_pagination_expression
+    exprs << @pagination_expression
 
     statement = exprs.join("\n")
 
