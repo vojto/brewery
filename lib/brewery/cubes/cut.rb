@@ -1,6 +1,7 @@
 module Brewery
 class Cut
 attr_accessor :dimension
+attr_accessor :hierarchy
 
 def initialize(dimension = nil)
     @dimension = dimension

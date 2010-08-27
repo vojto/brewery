@@ -32,36 +32,6 @@ def initialize(cube)
     @cuts = []
 end
 
-def table_for_dataset(dataset_name)
-    dataset = @cube.logical_model.dataset_description_with_name(dataset_name)
-    table = dataset.object_name
-    return table
-end
-
-def create_join_expression
-    expressions = Array.new
-
-    joins = @cube.joins
-    
-    joins.each { |join|
-        master_table = table_for_dataset(join.master_dataset_name)
-        detail_table = table_for_dataset(join.detail_dataset_name)
-        master_key = join.master_key
-        detail_key = join.detail_key
-
-        expr = "JOIN "
-        expr << "#{detail_table} #{join.detail_dataset_name} "
-        expr << "ON (#{join.detail_dataset_name}.#{detail_key} = #{join.master_dataset_name}.#{master_key})"
-        expressions << expr
-        # puts "==> #{expr}"
-    }
-    if expressions.empty?
-        @join_expression = ""
-    else
-        @join_expression = expressions.join("\n")
-    end
-end
-
 def create_detail_select_expression
     @selected_fields = {}
 
@@ -676,6 +646,36 @@ def filter_condition_for_cut(cut)
     else
         raise ArgumentError, "Unknown cube cut class #{cut.class}"
     end
+end
+
+def create_join_expression
+    expressions = Array.new
+
+    joins = @cube.joins
+    
+    joins.each { |join|
+        master_table = table_for_dataset(join.master_dataset_name)
+        detail_table = table_for_dataset(join.detail_dataset_name)
+        master_key = join.master_key
+        detail_key = join.detail_key
+
+        expr = "JOIN "
+        expr << "#{detail_table} #{join.detail_dataset_name} "
+        expr << "ON (#{join.detail_dataset_name}.#{detail_key} = #{join.master_dataset_name}.#{master_key})"
+        expressions << expr
+        # puts "==> #{expr}"
+    }
+    if expressions.empty?
+        @join_expression = ""
+    else
+        @join_expression = expressions.join("\n")
+    end
+end
+
+def table_for_dataset(dataset_name)
+    dataset = @cube.logical_model.dataset_description_with_name(dataset_name)
+    table = dataset.object_name
+    return table
 end
 
 def field_reference(field_string)
