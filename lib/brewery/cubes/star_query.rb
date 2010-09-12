@@ -362,7 +362,7 @@ def prepare_for_aggregation(measure, options = {})
 end
 
 def aggregation_summary
-    # puts "SUMMARY SQL: #{@summary_statement}"
+    puts "SUMMARY SQL: #{@summary_statement}"
     dataset = Brewery.workspace.execute_sql(@summary_statement)
     return dataset.first
 end

@@ -1,7 +1,8 @@
 # require 'test/unit/testsuite'
 require 'test/unit'
-require 'cubes_test'
-require 'description_test'
+# require 'cubes_test'
+require 'cube_slicer_test'
+# require 'description_test'
 
 class TS_BreweryCubesTests
 

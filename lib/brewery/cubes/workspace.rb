@@ -30,6 +30,14 @@ def initialize(connection)
         @connection = connection
     end
 end
+
+def self.destroy_default_workspace
+    if @@default_workspace
+        @@default_workspace._close_connection
+        @@default_workspace = nil
+    end
+end
+
 # FIXME: make this execute_sql and the other one to be execute_select_sql
 def execute_sql_no_data(sql_statement)
     @connection << sql_statement
@@ -37,6 +45,12 @@ end
 def execute_sql(sql_statement)
     # FIXME: add logging and time measurement
     return @connection[sql_statement]
+end
+
+private
+
+def _close_connection
+    @connection = nil
 end
 
 end # class Workspace
