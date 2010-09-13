@@ -3,7 +3,7 @@ module Brewery
 class Workspace
 @@default_workspace = nil
 
-attr_reader :connection
+attr_accessor :connection
 
 def self.default_workspace
     if !@@default_workspace
@@ -20,20 +20,29 @@ end
 # already established connection. If name is provided, connection is created
 # using default DataStoreManager
 # @see DataStoreManager#create_connection
-def initialize(connection)
-    if connection.class == String || connection.class == Symbol
-        @connection = DataStoreManager.default_manager.create_connection(connection)
+def initialize(conn_object)
+    if conn_object.class == String || conn_object.class == Symbol
+        store = DataStoreManager.default_manager.data_store(conn_object)
+        if store.class == Hash
+            store = store.hash_by_symbolising_keys
+        end
+
+        @connection = Sequel.connect(store)
         if !@connection
             raise ArgumentError, "Unable to create connection with name '#{connection}'"
         end
+
+		if store.class == Hash && store[:search_path] && store[:adapter].to_s == 'postgres'
+      		@connection.execute("SET search_path TO #{store[:search_path]}") 
+		end
     else
-        @connection = connection
+        @connection = conn_object
     end
 end
 
 def self.destroy_default_workspace
     if @@default_workspace
-        @@default_workspace._close_connection
+        @@default_workspace.close_connection
         @@default_workspace = nil
     end
 end
@@ -47,9 +56,10 @@ def execute_sql(sql_statement)
     return @connection[sql_statement]
 end
 
-private
-
-def _close_connection
+def close_connection
+    if @connection
+        @connection.disconnect
+    end
     @connection = nil
 end
 
