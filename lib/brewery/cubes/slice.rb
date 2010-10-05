@@ -113,7 +113,8 @@ end
 # @option options [Symbol] :limit_aggregation Which aggregation is used for determining limit
 # @option options [Number] :limit_value Limit value based on limit_type 
 # @option options [Symbol] :limit_sort Possible values: `:ascending`, `:descending`
-# @option options [Symbol] :order_direction How to order aggregated fields
+# @option options [Symbol] :order_by Order field
+# @option options [Symbol] :order_direction Order direction
 # @option options [Symbol] :page Used for pagination of results.
 # @option options [Symbol] :page_size Size of page for paginated results
 # == Examples:
