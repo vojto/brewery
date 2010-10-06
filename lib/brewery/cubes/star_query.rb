@@ -30,6 +30,7 @@ def initialize(cube)
     @fact_table_name = cube.fact_dataset.object_name
     @fact_alias = @fact_dataset_name
     @cuts = []
+    @generated_fields = []
 end
 
 def create_detail_select_expression
@@ -215,8 +216,9 @@ def prepare_for_aggregation(measure, options = {})
         field = aggregated_field_name(measure, agg)
         aggregated_fields[agg] = field
         selections << sql_field_aggregate(measure, agg, field)
+        @generated_fields << field
     }
-
+    @generated_fields << "record_count"
     selections << "COUNT(1) AS record_count"
 
     ################################################
@@ -679,7 +681,12 @@ def table_for_dataset(dataset_name)
 end
 
 def field_reference(field_string)
+    if @generated_fields.include?(field_string)
+        return field_string
+    end
+    
     ref = @cube.field_reference(field_string)
+    # FIXME: raise exception if there is no such field
     return "#{ref[0]}.#{ref[1]}"
 end
 
