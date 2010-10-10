@@ -52,6 +52,7 @@ def field_reference(field)
     if split.count == 1
         ref = [fact_dataset_name, field]
     else
+        # FIXME: get dataset name from dimension in split[0]
         ref = [split[0], split[1]]
     end
     return ref

@@ -216,6 +216,11 @@ def level_with_name(level_name)
 	return levels.first( :name => level_name )
 end
 
+# Return a hierarchy with given name. See {Hierarchy}
+def hierarchy_with_name(hier_name)
+	return hierarchies.first( :name => hier_name )
+end
+
 # Returns path in hierarchy which is one level higher than given path
 #
 # == Example:
