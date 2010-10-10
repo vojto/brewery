@@ -52,7 +52,7 @@ def select_statement
     return @select_statement
 end
 
-private:
+private
 
 def create_select_expression
     selections = []

@@ -1,0 +1,155 @@
+#! /usr/bin/ruby
+#
+# Brewery main tool
+#
+# For more info use: brewery --help
+#
+# Copyright:: (C) 2010 Knowerce, s.r.o.
+# 
+# Author:: Stefan Urbanek
+# Date:: Oct 2010
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+require 'rubygems'
+require 'brewery'
+require 'optparse'
+
+module Brewery
+
+class BreweryTool
+
+def initialize
+    @options = {}
+
+    OptionParser.new do |opts|
+        opts.banner = "Usage: brewery [options] <command> [command-args]"
+        
+        opts.on("-c", "--config CONFIG", "Specify a brewery configuration file.") do |config|
+            @config_file = Pathname.new(config)
+        end
+        opts.on("-d", "--debug", "Enable debugging") do
+            @debug = true
+        end
+        opts.on("-F", "--force", "Try to force command") do
+            @force = true
+        end
+        opts.on("-D", "--datastore DATASTORE", "Brewery data store") do |config|
+            @datastore = config
+        end
+
+
+        opts.separator "\n"
+        opts.separator "Commands:"
+        opts.separator "    initialize         - show brewery status"
+        opts.separator "    initialize         - initialize brewery schema"
+        opts.separator "    upgrade            - upgrade brewery schema"
+        opts.separator "    datastores         - list available data stores"
+    end.parse!
+
+	@command = ARGV[0]
+	ARGV.delete_at(0)
+	@args = ARGV
+
+    if @config_file && ! @config_file.exist?
+        raise "Configuration file '#{config_file}' does not exist"
+    end
+    
+    load_configuration
+end
+
+def load_configuration
+    options = {}
+    if @datastore
+        options["brewery_data_store"] = @datastore
+    end
+    
+	if @config_file
+		Brewery::load_configuration_from_file(@config_file, options)
+	else
+		Brewery::load_default_configuration(options)
+	end
+	
+	@configuration = Brewery::configuration
+	if !@configuration
+		raise "Brewery environment is not configured (no #{config_file})"
+	end
+end
+
+def list_datastores
+	list = DataStoreManager.default_manager.available_data_stores
+	list.each { |ds|
+		puts ds
+	}
+end
+
+def initialize_brewery
+	if Brewery::brewery_datastore_initialized? && !@force
+	    puts "ERROR: unable to initialize brewery datastore - already initialized. Use --force if you want to destroy and recreate current datastore"
+        return
+	end
+	Brewery::initialize_brewery_datastore
+    puts "Datastore '#{Brewery::datastore_name}' initialized as brewery datastore"
+end
+def upgrade_brewery
+	Brewery::upgrade_brewery_datastore
+    puts "Datastore '#{Brewery::datastore_name}' upgraded"
+end
+
+def brewery_status
+    datastore_name = Brewery::datastore_name
+    if !datastore_name
+        datastore_name = "<not specified>"
+    end
+    puts "datastore name: #{datastore_name}"
+	if Brewery::brewery_datastore_initialized?
+        puts "datastore status: initialized"
+    else
+        puts "datastore status: empty"
+    end
+end
+
+def run	
+	if @command
+		@command = @command.downcase
+	end
+
+	case @command
+	when "status" then
+		brewery_status
+	when "list-datastores" then
+		list_datastores
+	when "initialize" then
+		initialize_brewery
+	when "upgrade" then
+		upgrade_brewery
+	else 
+		puts "Unknown command #{@command}. Try --help"
+	end
+#    create_etl_manager
+#    @etl_manager.log.info "ETL start"
+#    if not @jobs.empty?
+#        run_jobs(@jobs)
+#    else
+#        run_scheduled_jobs
+#    end
+#    @etl_manager.log.info "ETL finished"
+end
+
+end
+
+end # module
+
+tool = Brewery::BreweryTool.new
+tool.run

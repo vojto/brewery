@@ -97,14 +97,15 @@ end
 # * /etc/brewery.yml - system-wide configuration
 #
 # First file found is loaded, the others are ignored
-def self.load_default_configuration
+# @param [Hash] override_options - replace options in configuration file with the ones provided in the argument
+def self.load_default_configuration(override_options = {})
 	file = @@default_configuration_files.detect { |file|
 			path = Pathname.new(file).expand_path
 			path.exist? && path.file?
 		}
 
 	if file
-		self.load_configuration_from_file(file)
+		self.load_configuration_from_file(file, override_options)
 	end
 end
 
@@ -123,8 +124,9 @@ def self.load_rails_configuration
 end
 
 # Configure brewery from a YAML file.
+# @param [Hash] override_options - replace options in configuration file with the ones provided in the argument
 # @see Brewery#configure_from_hash
-def self.load_configuration_from_file(file)
+def self.load_configuration_from_file(file, override_options = {})
 	path = Pathname.new(file).expand_path
 
 	begin
@@ -133,6 +135,8 @@ def self.load_configuration_from_file(file)
 		raise RuntimeError, "Unable to read brewery configuration file #{file}."
 	end
 	
+    config = config.merge(override_options)
+
 	self.configure_from_hash(config)
 end
 
@@ -192,6 +196,7 @@ end
 # Set datastore which will be used for brewery
 # @param [String, Symbol] name - name of the datastore. See: {DataStoreManager#data_store}
 def self.set_brewery_datastore(name)
+    @@datastore_name = name
 	datastore = DataStoreManager.default_manager.data_store(name)
 	if !datastore
 		raise "Datastore '#{name}' not found"
@@ -200,6 +205,10 @@ def self.set_brewery_datastore(name)
 	DataMapper.setup(:default, datastore)
 end
 
+# @return name of brewery datastore
+def self.datastore_name
+    return @@datastore_name
+end
 # Initialize datastore structures (database tables) used by brewery. If no tables exist, they will
 # be created. If there are already Brewery structures in the datastore (database), they will
 # be destroyed.
@@ -215,6 +224,16 @@ end
 def self.upgrade_brewery_datastore
     DataMapper.finalize
 	DataMapper.auto_upgrade!
+end
+
+# @return true if brewery datastore is initialized
+def self.brewery_datastore_initialized?
+    begin
+        LogicalModel.first
+    rescue
+        return false
+    end
+    return true
 end
 
 # Get Brewery configuration hash. See also: {Brewery#configure_from_file}
