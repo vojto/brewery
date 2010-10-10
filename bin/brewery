@@ -49,10 +49,9 @@ def initialize
             @datastore = config
         end
 
-
         opts.separator "\n"
         opts.separator "Commands:"
-        opts.separator "    initialize         - show brewery status"
+        opts.separator "    status             - show brewery status"
         opts.separator "    initialize         - initialize brewery schema"
         opts.separator "    upgrade            - upgrade brewery schema"
         opts.separator "    datastores         - list available data stores"
@@ -137,14 +136,6 @@ def run
 	else 
 		puts "Unknown command #{@command}. Try --help"
 	end
-#    create_etl_manager
-#    @etl_manager.log.info "ETL start"
-#    if not @jobs.empty?
-#        run_jobs(@jobs)
-#    else
-#        run_scheduled_jobs
-#    end
-#    @etl_manager.log.info "ETL finished"
 end
 
 end

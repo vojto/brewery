@@ -19,7 +19,7 @@ class Hierarchy
     property :name, String
 
     belongs_to    :dimension #, {:through=>DataMapper::Resource}
-    has        n, :hierarchy_levels, :order => [ :order.asc ]
+    has        n, :hierarchy_levels, :order => [ :order.asc ] #, :constraint => :destroy
 
 def levels=(array)
     self.save

@@ -27,6 +27,9 @@ class Dimension
 	include DataMapper::Resource
 
 	property :id, Serial
+
+    # Dimension identifier - unique within cube
+    # @todo Check for uniqueness
 	property :name, String
 
     # Human-readable dimension label
@@ -41,8 +44,8 @@ class Dimension
 	property :description, Text
 	property :default_hierarchy_name, String
 
-    has n, :levels, { :model => DimensionLevel }
-	has n, :hierarchies #, {:through=>DataMapper::Resource} # default hierarchy
+    has n, :levels, { :model => DimensionLevel} #, :constraint => :destroy }
+	has n, :hierarchies # , {:constraint => :destroy} #, {:through=>DataMapper::Resource} # default hierarchy
     has n, :cubes, {:through=>DataMapper::Resource}
     belongs_to :logical_model
 

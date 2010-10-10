@@ -3,48 +3,71 @@ require 'brewery/cubes/dataset_join'
 require 'brewery/core/dataset_description'
 require 'brewery/core/field_description'
 
+# Logical Model represents mapping between human point of view on analysed facts and their physical
+# database representation. Main objects of a model are datasets (physical objects) and multidimensioanl
+# cubes (logical objects). For more information see {Cube}.
+# @see Cube
+# @see Dimension
+# @see Hierarchy
 class LogicalModel
     include DataMapper::Resource
 
     property :id,   Serial
+
+    # Model identifier - unique within brewery data store
+    # @todo Check for uniqueness
     property :name, String
+
+    # Human readable model name
+    property :label, String
+
+    # Human readable model description
     property :description, Text
 
-    has      n, :dataset_descriptions, {:through=>DataMapper::Resource}
-    has      n, :dimensions
-    has      n, :cubes #,  {:through=>DataMapper::Resource}
+    has      n, :dataset_descriptions, {:through=>DataMapper::Resource} #, :constraint => :destroy}
+    has      n, :dimensions # , {:constraint => :destroy}
+    has      n, :cubes # , {:constraint => :destroy} #,  {:through=>DataMapper::Resource}
 
     @@model_search_paths = [
                         './models',
                         '~/.brewery/models'
                     ]
 
-def self.model_from_path(path)
-    model = LogicalModel.new
-    if !model.save
-        raise "Unable to save model"
-    end
-    model.load_from_path(path)
-	return model
-end
-
-# Load model from a directory specified by _path_. The directory should contain:
+# Create a model from a directory specified by _path_. The directory should contain:
 # * model.yml - model information
 # * dataset_*.yml - dataset description
 # * dim_*.yml - dimension specifications
 # * cube_*.yml - cube specifications
+# If model with given name already exists method fails, unless option :replace is set to true.
 # @param [String, Pathname] Directory with model files
-def load_from_path(path)
+# @option options [Boolean] :replace if true create model if already exists
+# @todo change model file naming
+def self.create_model_from_path(path, options = {})
+    replace_flag = options[:replace] ? true : false
+
     path = Pathname.new(path)
     model_file = path + 'model.yml'
     
 	hash = YAML.load_file(model_file)
 	hash = hash.hash_by_symbolising_keys
 	
+	model_name = hash[:name]
+	
+	model = LogicalModel.model_with_name(model_name)
+	if model
+        if !replace_flag
+	        raise "Model #{model_name} already exists"
+	    else
+	        model.destroy
+	    end
+	end
+
+    model = LogicalModel.new
+	
 	files = hash[:files]
 	
-	self.name = hash[:name]
-	self.description = hash[:description]
+	model.name = hash[:name]
+	model.description = hash[:description]
 		
 	ds_files = Array.new
 	dim_files = Array.new
@@ -67,11 +90,11 @@ def load_from_path(path)
 
     ds_files.each {|file|
         ds = DatasetDescription.new_from_file(file)
-        dataset_descriptions << ds
-        puts "--> Loaded dataset: #{ds.name}"
+        model.dataset_descriptions << ds
+        # puts "--> Loaded dataset: #{ds.name}"
     }
 
-    if !self.save
+    if !model.save
         raise "Unable to save model"
     end
 
@@ -79,24 +102,25 @@ def load_from_path(path)
     # 2. Dimensions
 
     dim_files.each {|file|
-        dim = Dimension.new
-        dimensions << dim
+        dim = model.dimensions.new
         dim.initialize_from_file(file)
-        # puts "--> Loaded dimension: #{dim.name}"
     }
 
-    if !self.save
+    if !model.save
         raise "Unable to save model"
     end
 
     ################################################################
     # 2. Cubes
-
     cube_files.each {|file|
-        load_cube_from_file(file)
+        model.load_cube_from_file(file)
     }
-    
-    self.save
+
+    if !model.save
+        raise "Unable to save model"
+    end
+
+    return model
 end
 
 def load_cube_from_file(file)
@@ -109,7 +133,6 @@ def load_cube_from_file(file)
 	cube.label = hash[:label]
 	cube.description = hash[:description]
 	cube.fact_dataset_name = hash[:fact_dataset]
-    # self.cubes << cube
 
     ################################################################
     # 2. Joins
@@ -139,7 +162,7 @@ def load_cube_from_file(file)
             cube.dimensions << dim
 	    }
 	end
-	
+
 	if !cube.save
         raise "Unable to save cube"
     end
@@ -191,9 +214,6 @@ end
 # Returns model with given name
 def self.model_with_name(name)
     model = self.first(:name => name)
-    if !model
-        raise ArgumentError, "Unable to find model with name '#{name}'"
-    end
     return model
 end
 

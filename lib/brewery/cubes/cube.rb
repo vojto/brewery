@@ -13,8 +13,8 @@ class Cube
 	property :fact_dataset_name, String
 
     belongs_to :logical_model
-    has n, :dimensions, {:through=>DataMapper::Resource}
-    has      n, :joins, { :model => DatasetJoin }
+    has n, :dimensions, {:through=>DataMapper::Resource} #, :constraint => :destroy}
+    has      n, :joins, { :model => DatasetJoin } #, :constraint => :destroy }
 
 def validate
     results = []

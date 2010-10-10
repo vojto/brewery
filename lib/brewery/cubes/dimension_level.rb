@@ -19,7 +19,6 @@ class DimensionLevel
     belongs_to    :dimension
     has        n, :hierarchy_levels
 
-
 def description_field
     field = attribute_get(:description_field)
 

@@ -24,6 +24,7 @@ require 'dm-core'
 require 'dm-types'
 require 'dm-migrations'
 require 'dm-is-list'
+# require 'dm-constraints'
 require 'data_objects'
 
 require 'brewery/core_ext/class'
@@ -69,20 +70,25 @@ require 'brewery/cubes/cube_query'
 # to be obsoleted:
 require 'brewery/cubes/star_query'
 
-# require 'brewery-streams'
-
-# == Boom:
 # This is module description. An another sentence.
-# @author boo
+# Framework for data manipulation and analysis. Provides simple ETL and OLAP tools.
+# 
+# Notable classees: {LogicalModel}, {Cube}, {ETLManager}
+# @author Stefan Urbanek
 module Brewery
 
+# Paths to default configuration files Brewery is looking for. First file found is read,
+# others are ignored
 @@default_configuration_files = [
 					'./config/brewery.yml',
 					'~/.brewery/config.yml',
 					'/etc/brewery/config.yml'
 				]
+# @private
 @@configuration = nil
+# @private
 @@logger = nil
+# @private
 @@debug = false
 
 # Get default data store manager. Short-cut for {DataStoreManager#default_manager}
