@@ -1,0 +1,168 @@
+#! /usr/bin/ruby
+#
+# Brewery logical model tool
+#
+# For more info use: brewmodel --help
+#
+# Copyright:: (C) 2010 Knowerce, s.r.o.
+# 
+# Author:: Stefan Urbanek
+# Date:: Oct 2010
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+require 'rubygems'
+require 'brewery'
+require 'optparse'
+
+module Brewery
+
+class BreweryTool
+
+def initialize
+    @options = {}
+
+    OptionParser.new do |opts|
+        opts.banner = "Usage: brewmodel [options] <command> [command-args]"
+        
+        opts.on("-c", "--config CONFIG", "Specify a brewery configuration file.") do |config|
+            @config_file = Pathname.new(config)
+        end
+        opts.on("-d", "--debug", "Enable debugging") do
+            @debug = true
+        end
+        opts.on("-F", "--force", "Try to force command") do
+            @force = true
+        end
+        opts.on("-D", "--datastore DATASTORE", "Brewery data store") do |config|
+            @datastore = config
+        end
+
+        opts.separator "\n"
+        opts.separator "Commands:"
+        opts.separator "    list             - list models"
+        opts.separator "    load <directory> - load model from directory, replacing existing model"
+        opts.separator "    delete <model>   - delete model"
+#        opts.separator "    describe <model>   - describe model"
+#        opts.separator "    export <model> [<directory>]  - export model into directory"
+    end.parse!
+
+	@command = ARGV[0]
+	ARGV.delete_at(0)
+	@args = ARGV
+
+    if @config_file && ! @config_file.exist?
+        raise "Configuration file '#{config_file}' does not exist"
+    end
+    
+    load_configuration
+end
+
+def load_configuration
+    options = {}
+    if @datastore
+        options["brewery_data_store"] = @datastore
+    end
+    
+    puts "using datastore '#{@datastore}'"
+    
+	if @config_file
+		Brewery::load_configuration_from_file(@config_file, options)
+	else
+		Brewery::load_default_configuration(options)
+	end
+	
+	@configuration = Brewery::configuration
+	if !@configuration
+		raise "Brewery environment is not configured (no #{config_file})"
+	end
+end
+
+def list_models
+	list = LogicalModel.each { |model| 
+	    puts "#{model.name} - #{model.label}: #{model.description}"
+	}
+end
+
+def load_model
+	if @args.count == 0
+		puts "No model path given. Please specify a directory name containing model descritpion files."
+        exit 1
+	else
+		model_path = Pathname.new(@args[0])
+	end
+
+    if !model_path.exist?
+        puts "directory #{model_path} does not exist"
+        exit 1
+    end
+    
+    puts "creating model from #{model_path}"
+
+    options = @force ? {:replace => true} : {}
+
+    model = LogicalModel.create_model_from_path(model_path, options)
+
+    puts "model #{model.name} created"
+    puts "validating..."
+
+    result = model.validate
+    if result.count > 0
+        result.each { | msg |
+            puts "#{msg[0]}: #{msg[1]}"
+        }
+    else
+        puts "model is valid"
+    end
+end
+
+def delete_model
+	if @args.count == 0
+		puts "No model name path given"
+        exit 1
+	else
+		model_name = @args[0]
+	end
+	
+	model = LogicalModel.model_with_name(model_name)
+	if !model
+	    puts "no model with name '#{model_name}' exists"
+	else
+	    model.destroy
+	end
+end
+
+def run	
+	if @command
+		@command = @command.downcase
+	end
+
+	case @command
+	when "list" then
+		list_models
+	when "load" then
+		load_model
+	when "delete" then
+		delete_model
+	else 
+		puts "Unknown command #{@command}. Try --help"
+	end
+end
+
+end
+
+end # module
+
+tool = Brewery::BreweryTool.new
+tool.run
