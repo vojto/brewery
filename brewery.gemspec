@@ -11,7 +11,7 @@ spec = Gem::Specification.new do |s|
   s.has_rdoc = true
   s.extra_rdoc_files = ["README"]
   s.executables << 'etl'
-  s.executables << 'dataaudit'
+  s.executables << 'brewaudit'
   s.executables << 'brewery'
   s.executables << 'brewmodel'
 end
