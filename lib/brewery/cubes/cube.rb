@@ -46,7 +46,7 @@ def validate
 
     return results
 end
-
+    
 def field_reference(field)
     split = field.split('.')
     if split.count == 1
@@ -71,6 +71,7 @@ end
 
 # Return dataset description representing fact
 def fact_dataset
+    # FIXME: rename this to fact_dataset_description
     if !@fact_dataset
         @fact_dataset = logical_model.dataset_description_with_name(fact_dataset_name)
     end
@@ -152,6 +153,16 @@ def label_for_field(field_name)
     else
         raise ArgumentError, "Ivnalid field name '#{field_name}' (more than two relationship levels)"
     end
+end
+def all_fields
+    all_fields = []
+    fact_dataset.field_descriptions.each { |field|
+        all_fields << field.name.to_sym
+    }
+    dimensions.each { |dimension|
+        all_fields.concat(dimension.all_fields)
+    }
+    return all_fields
 end
 
 end # class

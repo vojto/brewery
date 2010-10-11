@@ -6,14 +6,15 @@ class Workspace
 attr_accessor :connection
 
 def self.default_workspace
-    if !@@default_workspace
-        @@default_workspace = self.new
+    ws = Thread.current[:brewery_default_workspace]
+    if !ws
+        raise RuntimeError, "Default workspace not initialized"
     end
-    return @@default_workspace
+    return ws
 end
 
 def set_default
-    @@default_workspace = self
+    Thread.current[:brewery_default_workspace] = self
 end
 
 # Initializes new workspace with a connection which can be either a name or

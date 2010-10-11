@@ -269,6 +269,15 @@ def to_yaml
 	return self.to_hash.to_yaml
 end
 
+def all_fields
+    all_fields = []
+    levels.each { |level|
+        all_fields.concat(level.level_fields)
+    }
+    return all_fields.collect { |field| field.to_sym }
+end
+
+
 end # class
 
 end # Module
