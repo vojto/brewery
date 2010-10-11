@@ -525,13 +525,13 @@ def create_dimension_index(index_table, dimension, a_hierarchy = nil)
             path_str_stmt = path_fields.join(" || '-' || " )
 
             exprs << "INSERT INTO #{index_table}"
-            exprs << "(dimension, dimension_id, hierarchy, level, level_id, level_key, field, value, path)"
-            exprs << "SELECT '#{dimension.name}', #{dimension.id}, '#{hierarchy.name}', '#{level.name}', #{level.id}, #{level.key_field}, '#{field}', #{field}, #{path_str_stmt}"
+            exprs << "(dimension, dimension_id, hierarchy, level, level_id, level_key, field, value, path, description_value)"
+            exprs << "SELECT '#{dimension.name}', #{dimension.id}, '#{hierarchy.name}', '#{level.name}', #{level.id}, #{level.key_field}, '#{field}', #{field}, #{path_str_stmt}, #{level.description_field}"
             exprs << "FROM #{@fact_table_name} AS #{@fact_alias} "
             exprs << @join_expression    
-            exprs << "GROUP BY #{path_fields_stmt}, #{field}"
+            exprs << "GROUP BY #{path_fields_stmt}, #{field}, #{level.description_field}"
             statement = exprs.join("\n")
-            puts "INDEX SQL: #{statement}"
+            # puts "INDEX SQL: #{statement}"
             dataset = Brewery.workspace.execute_sql_no_data(statement)
         }
     }
