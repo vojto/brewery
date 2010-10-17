@@ -1,0 +1,10 @@
+name: category
+object_name: dm_category
+label: Product category
+fields:
+    -
+        name: category_code
+        label: Category code
+    -
+        name: category
+        label: Category

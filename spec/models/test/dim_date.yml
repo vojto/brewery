@@ -1,0 +1,25 @@
+name: date
+label: Dátum
+key_field: date.id
+levels:
+    year:
+        label: Rok
+        fields:
+            - date.year
+    month:
+        label: Mesiac
+        fields:
+            - date.month
+            - date.month_name
+            - date.month_sname
+    day:
+        label: Deň
+        fields:
+            - date.day
+            - date.week_day
+hierarchies:
+    default:
+        levels:
+            - year
+            - month
+            - day

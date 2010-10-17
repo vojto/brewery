@@ -1,0 +1,16 @@
+name: sales
+object_name: ft_sales
+label: Sales
+fields:
+    -
+        name: category
+        label: Category
+    -
+        name: product
+        label: Product
+    -
+        name: revenue
+        label: Revenue
+    -
+        name: amount
+        label: Amount

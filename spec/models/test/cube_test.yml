@@ -1,0 +1,14 @@
+name: test
+label: "Test cube"
+description: "This is cube for testing brewery cubes"
+fact_dataset: sales
+dimensions:
+    - date
+    - category
+joins:
+    -
+        master: sales.date_id
+        detail: date.id
+    -
+        master: sales.category
+        detail: category.category_code
