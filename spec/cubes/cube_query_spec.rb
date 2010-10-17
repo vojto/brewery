@@ -19,6 +19,11 @@ describe "CubeQuery" do
         @query = Brewery::CubeQuery.new(@cube, "view")
         @query.view_alias = 'v'
     end
+    
+    describe "basics" do
+        it "should test aggregated field name creation"
+        it "should test is_drill_down"
+    end
 
     describe "detail expressions" do
         it "should create single record query" do
@@ -49,6 +54,8 @@ describe "CubeQuery" do
             sql = @query.records_sql
             sql.should == 'SELECT * FROM view AS v WHERE "date.year" = 2010 AND "date.month" = 2'
         end
+
+        it "should filter details by range cut"
     
         it "should order details" do
             @query.order_by = "name"

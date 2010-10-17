@@ -16,6 +16,8 @@ class Cube
     has n, :dimensions, {:through=>DataMapper::Resource} #, :constraint => :destroy}
     has      n, :joins, { :model => DatasetJoin } #, :constraint => :destroy }
 
+    attr_accessor :view
+
 def validate
     results = []
 
@@ -111,10 +113,19 @@ def dimension_with_name(name)
 	return dim
 end
 
-def fact(fact_id)
-	query = create_star_query
+def fact(fact_id)    
+	query = create_query
 
 	return query.record(fact_id)
+end
+
+def create_query
+    if !@view
+        raise RuntimeError, "No cube view specified"
+    end
+
+    query = CubeQuery.new(self, view)
+    return query
 end
 
 def create_star_query

@@ -14,14 +14,16 @@ def aggregation_summary_sql(options = {})
     return @summary_sql_statement
 end
 
+# @todo FIXME: refactor return value from this method
 def aggregate_drill_down_rows
     dataset = Brewery.workspace.execute_sql(@drill_sql_statement)
 
     sum_field_name = aggregated_field_name(@measure, :sum)
     sum_field = sum_field_name.to_sym
 
-    @row_sum = 0
-    @rows = Array.new
+    # FIXME: refactor this
+    row_sum = 0
+    rows = Array.new
     dataset.each { |record|
         result_row = record.dup
 
@@ -37,9 +39,11 @@ def aggregate_drill_down_rows
         if value.class == String
             value = value.to_f
         end
-        @row_sum += value
-        @rows << result_row
+        row_sum += value
+        rows << result_row
     }
+    
+    return { :rows => rows, :sum => row_sum }
 end
 
 def aggregation_drill_down_sql(options = {})
@@ -237,11 +241,11 @@ def create_aggregation_statements(options = {})
     end
 end
 
-private
-
 def aggregated_field_name(field, aggregation)
     return "#{field}_#{aggregation}"
 end
+
+private
 
 def aggregate_field_sql(field, operator, alias_name)
     operator = @@sql_operators[operator]

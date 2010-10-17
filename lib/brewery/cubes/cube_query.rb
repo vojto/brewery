@@ -17,7 +17,13 @@ attr_accessor :page
 attr_accessor :page_size
 attr_accessor :measure
 
+attr_accessor :computed_fields
+
+attr_reader :is_drill_down
+attr_reader :has_limit
+
 attr_accessor :view_alias
+
 def initialize(cube, view)
     @view_alias = 'v'
     if view=~ /\w+(\.\w+)?/
@@ -168,7 +174,7 @@ def conditions_for_cut(cut)
         if !range_key
             raise ArgumentError, "Dimension has no key field (required for ranged cuts)"
         end
-        ref = field_reference(range_key)
+        ref = quote_field(field_reference(range_key))
         cond_expression = "#{ref} BETWEEN #{cut.from_key} AND #{cut.to_key}"	
         return cond_expression
     when SetCut

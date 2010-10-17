@@ -17,6 +17,17 @@ def self.initialize_test_data_store
     Brewery::create_default_workspace(:brewery_test)
 end
 
+def self.initialize_for_cube
+    Brewery::Test.initialize_test_data_store
+    Brewery::create_default_workspace(:brewery_sqlite_test)
+end
+
+def self.test_cube
+    models_path = Brewery::Test.models_path
+    model = Brewery::LogicalModel.create_model_from_path(models_path + 'test')
+    return model.cube_with_name('test')
+end
+
 def self.models_path
     return @@test_models_path
 end

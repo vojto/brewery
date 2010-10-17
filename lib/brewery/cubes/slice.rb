@@ -124,8 +124,9 @@ end
 # @todo Rewrite this to use StarSchema - reuse code
 def aggregate(measure, options = {})
 
-    query = create_star_query(options)
-    query.prepare_for_aggregation(measure, options)
+    query = create_query(options)
+    query.measure = measure
+    query.create_aggregation_statements(options)
     query.computed_fields = @computed_fields
     
     ################################################
@@ -170,9 +171,9 @@ def aggregate(measure, options = {})
 	# 8. Execute main selection
 
     if query.is_drill_down
-        query.aggregate_drill_down_rows
-        rows = query.rows
-        r_sum = query.row_sum
+        result = query.aggregate_drill_down_rows
+        rows = result[:rows]
+        r_sum = result[:sum]
     else
         # Only summary
         rows = Array.new
@@ -202,8 +203,8 @@ def aggregate(measure, options = {})
     return results
 end
 
-def create_star_query(options = {})
-	query = @cube.create_star_query
+def create_query(options = {})
+	query = @cube.create_query
 
     ################################################
 	# 1. Apply cuts
@@ -232,18 +233,18 @@ end
 
 def dimension_values_at_path(dimension_ref, path, options = {})
     dimension = @cube.dimension_object(dimension_ref)
-    query = create_star_query(options)
+    query = create_query(options)
     return query.dimension_values_at_path(dimension, path)
 end
 
 def dimension_detail_at_path(dimension_ref, path)
     dimension = @cube.dimension_object(dimension_ref)
-    query = create_star_query
+    query = create_query
     return query.dimension_detail_at_path(dimension, path)
 end
 
 def facts(options = {})
-	query = create_star_query(options)
+	query = create_query(options)
 
     return query.records
 end
