@@ -11,6 +11,8 @@ describe "CubeQuery" do
         @day_cut = Brewery::Cut.point_cut('date', [2010, 2, 1])
         @month_cut = Brewery::Cut.point_cut('date', [2010, 2])
         @year_cut = Brewery::Cut.point_cut('date', [2010])
+        @year_path = [2010]
+        @month_path = [2010, 1]
     end
     
     before :each do
@@ -114,4 +116,42 @@ describe "CubeQuery" do
             sql.should == 'SELECT COUNT(1) AS record_count, "date.year" FROM view AS v WHERE "date.year" = 2010 AND "date.month" = 2 GROUP BY "date.year" ORDER BY "date.year"'
         end
     end
+    
+    describe "dimension values expression" do
+        it "should return valied sql statement" do
+            sql = @query.dimension_values_sql(:date, [])
+            sql.should == 'SELECT "date.year" FROM view AS v WHERE "date.year" IS NOT NULL GROUP BY "date.year"'
+
+            month = '"date.month", "date.month_name", "date.month_sname"' 
+            sql = @query.dimension_values_sql(:date, [2010])
+            sql.should == 'SELECT ' + month + ' FROM view AS v WHERE "date.year" = 2010 AND "date.month" IS NOT NULL GROUP BY ' + month
+        end
+        
+        it "should return paginated sql statement" do
+            @query.page = 2
+            @query.page_size = 50
+            sql = @query.dimension_values_sql(:date, [])
+            sql.should == 'SELECT "date.year" FROM view AS v WHERE "date.year" IS NOT NULL GROUP BY "date.year" LIMIT 50 OFFSET 100'
+        end
+
+        it "should return ordered sql statement" do
+            @query.order_by = "date.year"
+            @query.order_direction = :asc
+            sql = @query.dimension_values_sql(:date, [])
+            sql.should == 'SELECT "date.year" FROM view AS v WHERE "date.year" IS NOT NULL GROUP BY "date.year" ORDER BY "date.year" ASC'
+        end
+
+        it "should return ordered and paginated sql statement" do
+            @query.order_by = "date.year"
+            @query.order_direction = :asc
+            @query.page = 2
+            @query.page_size = 50
+            sql = @query.dimension_values_sql(:date, [])
+            sql.should == 'SELECT "date.year" FROM view AS v WHERE "date.year" IS NOT NULL GROUP BY "date.year" ORDER BY "date.year" ASC LIMIT 50 OFFSET 100'
+        end
+    end
+
+    describe "dimension details expression" do
+    end
+
 end

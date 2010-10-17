@@ -66,6 +66,8 @@ require 'brewery/cubes/logical_model'
 require 'brewery/cubes/hierarchy'
 require 'brewery/cubes/cube_view_builder'
 require 'brewery/cubes/cube_query'
+require 'brewery/cubes/cube_query+dimensions'
+require 'brewery/cubes/cube_query+aggregations'
 
 # to be obsoleted:
 require 'brewery/cubes/star_query'
