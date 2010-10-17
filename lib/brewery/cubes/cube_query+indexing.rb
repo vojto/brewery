@@ -20,20 +20,27 @@ def create_dimension_index(index_table, dimension, a_hierarchy = nil)
     levels = hierarchy.levels
     path_fields = []
     levels.each { |level|
-        path_fields << level.key_field
+        path_fields << quote_field(level.key_field)
         level.level_fields.each { |field|
             exprs = []
 
             path_fields_stmt = path_fields.join(',')
             path_str_stmt = path_fields.join(" || '-' || " )
 
+            selection = ["'#{dimension.name}'", dimension.id, "'#{hierarchy.name}'",
+                         "'#{level.name}'", level.id, quote_field(level.key_field), 
+                         "'#{field}'", quote_field(field), path_str_stmt, 
+                         quote_field(level.description_field)]
+            selection_str = selection.join(', ')
+            
+
             exprs << "INSERT INTO #{index_table}"
             exprs << "(dimension, dimension_id, hierarchy, level, level_id, level_key, field, value, path, description_value)"
-            exprs << "SELECT '#{dimension.name}', #{dimension.id}, '#{hierarchy.name}', '#{level.name}', #{level.id}, #{level.key_field}, '#{field}', #{field}, #{path_str_stmt}, #{level.description_field}"
+            exprs << "SELECT #{selection_str}"
             exprs << "FROM #{@view_expression}"
-            exprs << "GROUP BY #{path_fields_stmt}, #{field}, #{level.description_field}"
+            exprs << "GROUP BY #{path_fields_stmt}, #{quote_field(field)}, #{quote_field(level.description_field)}"
             statement = exprs.join("\n")
-            # puts "INDEX SQL: #{statement}"
+            puts "INDEX SQL: #{statement}"
             dataset = Brewery.workspace.execute_sql_no_data(statement)
         }
     }

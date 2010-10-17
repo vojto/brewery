@@ -96,7 +96,7 @@ describe "Aggregations" do
             facts.count.should == 3
         end
 
-        describe "fact properties" do
+        describe "properties" do
             before :each do
             	from_key = 20100101
             	to_key = 20100203
@@ -123,16 +123,57 @@ describe "Aggregations" do
                 }
             end
             it "should have all keys as symbols" do
-                flag = first.keys.detect{ |key| key.class != Symbol }
+                flag = @first.keys.detect{ |key| key.class != Symbol }
                 flag.should == nil
             end
             it "should return known keys" do
-                first.keys.sort.should == record.keys.sort
+                @first.keys.sort.should == @record.keys.sort
             end
             it "should return expected record" do
-                first == record
+                @first.should == @record
             end
             
+        end
+    end
+    
+    describe "dimension value list" do
+        before :all do
+            @dim = @cube.dimension_with_name(:date)
+            @slice = @cube.whole
+        end
+        
+        it "should return years" do
+        	years = @slice.dimension_values_at_path(:date, [])
+        	years.collect {|r| r[:"date.year"] }.should == [2010]
+        end
+        
+        it "should return only known years" do
+        	months2009 = @slice.dimension_values_at_path(:date, [2009]).collect {|r| r[:"date.month"] }
+        	months2010 = @slice.dimension_values_at_path(:date, [2010]).collect {|r| r[:"date.month"] }
+        	months2009.should == []
+        	months2010.should == [1, 2, 3, 4]
+        end
+        
+        it "should return dimension fields" do
+        	months2010 = @slice.dimension_values_at_path(:date, [2010]).collect {|r| r }
+        	months2010[0][:"date.month_name"].should == "January"
+
+         	days_jan10 = @slice.dimension_values_at_path(:date, [2010, 1]).collect {|r| r[:"date.day"] }
+        	days_jan10.count.should == 2
+        end
+        
+        it "should order values" do
+        	values = @slice.dimension_values_at_path(:date, [2010], { :order_by => "date.month_name" })
+        	values = values.collect { |r| r[:"date.month_name"] }
+        	values.should == ["April", "February", "January", "March"]
+        end
+        
+        it "should paginate ordered values" do
+            options = { :order_by => "date.month_name", :page => 1, :page_size => 2 }
+        	values = @slice.dimension_values_at_path(:date, [2010], options)
+        	values = values.collect { |r| r[:"date.month_name"] }
+        	values.count.should == 2
+        	values.should == ["January", "March"]
         end
     end
 end

@@ -68,9 +68,7 @@ require 'brewery/cubes/cube_view_builder'
 require 'brewery/cubes/cube_query'
 require 'brewery/cubes/cube_query+dimensions'
 require 'brewery/cubes/cube_query+aggregations'
-
-# to be obsoleted:
-require 'brewery/cubes/star_query'
+require 'brewery/cubes/cube_query+indexing'
 
 # This is module description. An another sentence.
 # Framework for data manipulation and analysis. Provides simple ETL and OLAP tools.

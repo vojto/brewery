@@ -1,0 +1,31 @@
+h1. 0.4.0 - 2010-10-18
+
+h3. General
+
+* new tools: *brewery*, *brewmodel*, *brewaudit* (see --help of each tool for more information)
+* new rspec tests
+* new Cube Query (refactored depreciated private Star Query), requires view or materialized view (table)
+* added preliminary implementation of (materialized) view and new cube query builder (replacement for star_query)
+* moved connection code into workspace, manager connection code is depreciated
+* add path to search index
+* move default workspace into thread dictionary instead of class variable (make it work with rails self.response_body = proc { ... }; added all_fields into cube
+* minor documentation update
+
+h3. Cubes
+
+* added hierarchy to cut
+* added ordering to dimension values
+* added Slice.dimension_values_at_path and dimension_detail_at_path
+* added model validation
+* renamed Model to LogicalModel
+* moved datasets and joins to model
+* support of Snow Flake schema (therefore also allow references to fact table fields in dimension)
+* dimension level fields have to specify dataset name (if not specified cube fact is used as default) 
+
+h3. Fixes
+
+* use proper field alias in aggregation
+
+h3. Known Issues
+
+* destruction of model does not work properly, some issues with dm-contstraint

@@ -128,12 +128,6 @@ def create_query
     return query
 end
 
-def create_star_query
-	query = StarQuery.new(self)
-
-    return query
-end
-
 def field_with_name(field_name)
     return dataset_description.field_with_name(field)
 #    return fact_fields.first(:name => field_name)

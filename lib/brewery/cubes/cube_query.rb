@@ -184,15 +184,18 @@ def conditions_for_cut(cut)
     end
 end
 
-
 def field_reference(field_string)
     if @generated_fields.include?(field_string)
         return field_string
     end
-    
-    ref = @cube.field_reference(field_string)
+    # ref = @cube.field_reference(field_string)
+    split = field_string.split('.')
+    if split.count == 1
+        return "#{field_string}"
+    else
+        return "#{split[0]}.#{split[1]}"
+    end
     # FIXME: raise exception if there is no such field
-    return "#{ref[0]}.#{ref[1]}"
 end
 
 def quote_field(field)
