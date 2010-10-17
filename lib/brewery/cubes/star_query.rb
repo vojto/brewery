@@ -598,21 +598,6 @@ def dimension_detail_at_path(dimension, path)
     return dataset.first
 end
 
-
-def sql_field_aggregate(field, operator, alias_name)
-    sql_operators = {:sum => "SUM", :count => "COUNT", :average => "AVG", :min => "MIN", :max => "MAX"}
-
-    sql_operator = sql_operators[operator]
-
-    # FIXME: add this to unit testing
-    if !sql_operator
-        raise RuntimeError, "Unknown aggregation operator '#{operator}'"
-    end
-        
-    expression = "#{sql_operator}(#{field}) AS #{alias_name}"
-    return expression
-end
-
 def dimension_field_alias(dimension, field)
     return "#{dimension.name}.#{field}"
 end

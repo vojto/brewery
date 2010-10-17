@@ -13,11 +13,12 @@ describe "CubeQuery" do
         @year_cut = Brewery::Cut.point_cut('date', [2010])
     end
     
+    before :each do
+        @query = Brewery::CubeQuery.new(@cube, "view")
+        @query.view_alias = 'v'
+    end
+
     describe "detail expressions" do
-        before :each do
-            @query = Brewery::CubeQuery.new(@cube, "view")
-            @query.view_alias = 'v'
-        end
         it "should create single record query" do
             sql = @query.record_sql(1)
             sql.should == 'SELECT * FROM view AS v WHERE v.id = 1'
@@ -70,5 +71,47 @@ describe "CubeQuery" do
     end
     
     describe "aggregation expressions" do
+        it "should return only count of all records" do
+            sql = @query.aggregation_summary_sql
+            sql.should == 'SELECT COUNT(1) AS record_count FROM view AS v'
+        end
+
+        it "should return count and sum of amount" do
+            @query.measure = 'amount'
+            sql = @query.aggregation_summary_sql
+            sql.should == 'SELECT SUM(amount) AS amount_sum, COUNT(1) AS record_count FROM view AS v'
+        end
+        
+        it "should drill down to year" do
+            sql = @query.aggregation_drill_down_sql(:row_dimension => :date, :row_levels => [:year])
+            sql.should == 'SELECT COUNT(1) AS record_count, "date.year" FROM view AS v GROUP BY "date.year" ORDER BY "date.year"'
+        end
+
+        it "should drill even deeper to month" do
+            sql = @query.aggregation_drill_down_sql(:row_dimension => :date, :row_levels => [:year, :month])
+            year = '"date.year"'
+            month = '"date.month", "date.month_name", "date.month_sname"' 
+            fields = "#{year}, #{month}"
+            sql.should == "SELECT COUNT(1) AS record_count, #{fields} FROM view AS v GROUP BY #{fields} ORDER BY #{fields}"
+        end
+
+        it "should drill down and paginate" do
+            @query.page = 2
+            @query.page_size = 50
+            sql = @query.aggregation_drill_down_sql(:row_dimension => :date, :row_levels => [:year])
+            sql.should == 'SELECT COUNT(1) AS record_count, "date.year" FROM view AS v GROUP BY "date.year" ORDER BY "date.year" LIMIT 50 OFFSET 100'
+        end
+        
+        it "should cut and aggregate" do
+            @query.add_cut(@month_cut)
+            sql = @query.aggregation_summary_sql
+            sql.should == 'SELECT COUNT(1) AS record_count FROM view AS v WHERE "date.year" = 2010 AND "date.month" = 2'
+        end
+
+        it "should cut and drill down" do
+            @query.add_cut(@month_cut)
+            sql = @query.aggregation_drill_down_sql(:row_dimension => :date, :row_levels => [:year])
+            sql.should == 'SELECT COUNT(1) AS record_count, "date.year" FROM view AS v WHERE "date.year" = 2010 AND "date.month" = 2 GROUP BY "date.year" ORDER BY "date.year"'
+        end
     end
 end
