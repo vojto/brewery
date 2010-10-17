@@ -12,9 +12,75 @@ def dimension_values(dimension, path)
     dataset = Brewery.workspace.execute_sql(@dimension_values_statement)
     return dataset
 end
+    
+def dimension_detail_at_path(dimension, path)
+    statement = dimension_detail_sql(dimension, path)
+    dataset = Brewery.workspace.execute_sql(statement)
+    return dataset.first
+end
+
+def dimension_detail_sql(dimension, path, hierarchy = nil)
+    ################################################
+    # 1. Conditions
+    dimension = @cube.dimension_object(dimension)
+    
+    if !hierarchy
+        hierarchy = dimension.default_hierarchy
+    end
+    
+    if path.count != hierarchy.levels.count
+        raise ArgumentError, "Path should have same number of levels as hierarchy"
+    end
+
+    conditions = []
+    full_levels = []
+    path.each_index { |i|
+        value = path[i]
+        level = hierarchy.levels[i]
+        if ! level
+            raise RuntimeError, "No level number #{i} (count: #{hierarchy.levels.count}) in dimension #{dimension.name} hirerarchy #{hierarchy.name}. Path: #{path}"
+        end
+        
+        if value == :all
+            full_levels << level 
+        else
+            ref = quote_field(field_reference(level.key_field))
+            quoted_value = quote_value(path[i])
+            conditions << "#{ref} = #{quoted_value}"	
+        end
+    }
+
+    full_levels << hierarchy.next_level(path)
+
+    ################################################
+    # 2. Selections 
+    selections = []
+    hierarchy.levels.each { |level|
+        level.level_fields.each { |field|
+            selections << quote_field(field_reference(field))
+        }
+    }
+    select_expression = selections.join(', ')
+
+    ################################################
+    # 4. Create core SQL SELECT statements: summary and standard
+
+    exprs = Array.new
+    exprs << "SELECT #{select_expression}"
+    exprs << "FROM #{@view_expression}"
+    exprs << @join_expression    
+
+    if conditions.count > 0
+        condition_expression = conditions.join(' AND ')
+        exprs << "WHERE #{condition_expression}"
+    end
+    
+    statement = create_sql_statement(exprs)
+    return statement
+end
 
 private
-    
+
 def create_dimension_values_statement(dimension, path)
     if !path
         raise ArgumentError, "Path should not be nil"

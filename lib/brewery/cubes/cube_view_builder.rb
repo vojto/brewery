@@ -56,6 +56,10 @@ private
 
 def create_select_expression
     selections = []
+
+    # FIXME: make this configurable, do not default to 'id'
+    selections << "#{@fact_dataset_name}.id AS id"
+
     @cube.fact_dataset.field_descriptions.each { |field|
         field_name = field.name
         selections << "#{@fact_dataset_name}.#{field_name} AS #{field_name}"

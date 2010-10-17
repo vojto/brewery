@@ -6,8 +6,10 @@ def self.initialize_for_test
 end
 
 def self.initialize_test_data_store
+    sqlite_db_path = SPEC_ROOT + 'data/test.sqlite'
     manager = Brewery::DataStoreManager.new
     manager.add_data_store(:brewery_test, "sqlite::memory:")
+    manager.add_data_store(:brewery_sqlite_test, "sqlite://#{sqlite_db_path}")
     Brewery::DataStoreManager.default_manager = manager
 
     Brewery::set_brewery_datastore(:brewery_test)

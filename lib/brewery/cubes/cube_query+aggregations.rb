@@ -3,18 +3,49 @@ module Brewery
 # Query denormalized view representing cube data
 class CubeQuery
 
+def aggregation_summary
+    dataset = Brewery.workspace.execute_sql(@summary_sql_statement)
+    return dataset.first
+end
+
 # Returns SQL statement for aggregation results
 def aggregation_summary_sql(options = {})
     create_aggregation_statements(options)
     return @summary_sql_statement
 end
 
+def aggregate_drill_down_rows
+    dataset = Brewery.workspace.execute_sql(@drill_sql_statement)
+
+    sum_field_name = aggregated_field_name(@measure, :sum)
+    sum_field = sum_field_name.to_sym
+
+    @row_sum = 0
+    @rows = Array.new
+    dataset.each { |record|
+        result_row = record.dup
+
+        # Add computed fields
+        if @computed_fields && !@computed_fields.empty?
+            @computed_fields.each { |field, block|
+                result_row[field] = block.call(result_row)
+            }
+        end
+
+        # FIXME: use appropriate type (Sequel SQLite returns String)
+        value = result_row[sum_field]
+        if value.class == String
+            value = value.to_f
+        end
+        @row_sum += value
+        @rows << result_row
+    }
+end
+
 def aggregation_drill_down_sql(options = {})
     create_aggregation_statements(options)
     return @drill_sql_statement
 end
-
-private
 
 def create_aggregation_statements(options = {})
     create_condition_expression
@@ -193,7 +224,7 @@ def create_aggregation_statements(options = {})
                 raise ArgumentError, "Limit value for aggregation rank limit not provided"
             end
             # FIXME: is this portable?
-            @drill_sql_statement = "SELECT * FROM (#{@drill_statement}) s 
+            @drill_sql_statement = "SELECT * FROM (#{@drill_sql_statement}) s 
                                ORDER BY s.#{agg_field} #{direction} LIMIT #{limit_value}"
         when :percent
             # FIXME: implement :percent limit
@@ -205,6 +236,8 @@ def create_aggregation_statements(options = {})
         end
     end
 end
+
+private
 
 def aggregated_field_name(field, aggregation)
     return "#{field}_#{aggregation}"

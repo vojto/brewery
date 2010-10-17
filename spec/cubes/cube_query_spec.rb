@@ -152,6 +152,24 @@ describe "CubeQuery" do
     end
 
     describe "dimension details expression" do
+        it "should fail when there is no full path or path is longer" do
+            lambda {
+                @query.dimension_detail_sql(:date, [])
+            }.should raise_error (ArgumentError)
+
+            lambda {
+                @query.dimension_detail_sql(:date, [1,2,3,4])
+            }.should raise_error (ArgumentError)
+        end
+
+        it "should create valid sql statement" do
+            sql = @query.dimension_detail_sql(:date, [2010, 2, 1])
+
+            year = '"date.year"'
+            month = '"date.month", "date.month_name", "date.month_sname"' 
+            day = '"date.day", "date.week_day"'
+            sql.should == "SELECT #{year}, #{month}, #{day} FROM view AS v WHERE \"date.year\" = 2010 AND \"date.month\" = 2 AND \"date.day\" = 1"
+        end
     end
 
 end
