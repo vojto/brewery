@@ -34,7 +34,7 @@ end
 # @private
 # @api private
 def sql_condition(dimension_alias)
-    raise RuntimeError, "subclasses should override sql_condition"
+    raise RuntimeError, "depreciated"
 end
 
 def dimension_name
@@ -52,14 +52,6 @@ class PointCut < Cut
 include DataObjects::Quoting
 
 attr_accessor :path
-
-# @api private
-# @private
-
-def hierarchy
-    # FIXME: use more
-    return dimension.default_hierarchy
-end
 
 # @private
 def filter_dataset(dataset)

@@ -54,6 +54,10 @@ def self.default_manager
 	return @@default_manager
 end
 
+def self.default_manager=(manager)
+    @@default_manager = manager
+end
+
 def initialize
 	@data_stores = Hash.new
 	@file_data_stores = Hash.new

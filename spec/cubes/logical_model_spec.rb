@@ -12,9 +12,31 @@ describe "LogicalModel" do
             Brewery::LogicalModel.create_model_from_path(@models_path + "unknown")
         }.should raise_error (ArgumentError)
     end
+    describe "model" do
+        before(:all) do
+            @model = Brewery::LogicalModel.create_model_from_path(@models_path + 'test')
+        end
+        
+        it "should load model" do
+            @model.should_not == nil
+        end
 
-    it "should load model" do
-        model = Brewery::LogicalModel.create_model_from_path(@models_path + 'test')
-        model.should_not == nil
+        it "should have datasets" do
+            @model.dataset_descriptions.count.should == 3
+        end
+        
+        it "should have cube" do
+            cube = @model.cube_with_name('test')
+            cube.should_not == nil
+            cube.name.should == 'test'
+        end
+        
+        it "should have dimensions" do
+            @model.dimensions.count.should == 2
+
+            dims = @model.dimensions.collect { |dim| dim.name }
+            dims = dims.sort
+            dims.should == ["category", "date"]
+        end
     end
 end

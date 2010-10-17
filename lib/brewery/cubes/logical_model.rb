@@ -48,6 +48,10 @@ def self.create_model_from_path(path, options = {})
     path = Pathname.new(path)
     model_file = path + 'model.yml'
     
+    if !model_file.exist?
+        raise ArgumentError, "Model description file '#{model_file}' does not exist"
+    end
+    
 	hash = YAML.load_file(model_file)
 	hash = hash.hash_by_symbolising_keys
 	
