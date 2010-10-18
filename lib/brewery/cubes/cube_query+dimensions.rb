@@ -29,7 +29,8 @@ def dimension_detail_sql(dimension, path, hierarchy = nil)
     end
     
     if path.count != hierarchy.levels.count
-        raise ArgumentError, "Path should have same number of levels as hierarchy"
+        # FIXME: really?
+        # raise ArgumentError, "Path should have same number of levels as hierarchy"
     end
 
     conditions = []
