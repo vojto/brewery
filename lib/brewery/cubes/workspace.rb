@@ -13,6 +13,14 @@ def self.default_workspace
     return ws
 end
 
+def self.destroy_default_workspace
+    ws = Thread.current[:brewery_default_workspace]
+    if ws
+        ws.close_connection
+        Thread.current[:brewery_default_workspace] = nil
+    end
+end
+
 def set_default
     Thread.current[:brewery_default_workspace] = self
 end
@@ -22,6 +30,7 @@ end
 # using default DataStoreManager
 # @see DataStoreManager#create_connection
 def initialize(conn_object)
+puts "==> CREATING WORKSPACE #{self}"
     if conn_object.class == String || conn_object.class == Symbol
         store = DataStoreManager.default_manager.data_store(conn_object)
         if store.class == Hash
@@ -38,13 +47,6 @@ def initialize(conn_object)
 		end
     else
         @connection = conn_object
-    end
-end
-
-def self.destroy_default_workspace
-    if @@default_workspace
-        @@default_workspace.close_connection
-        @@default_workspace = nil
     end
 end
 
