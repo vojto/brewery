@@ -145,6 +145,32 @@ def data_store(name)
 	return store
 end
 
+def data_store_uri(name)
+    store = data_store(name)
+    if store
+        query = store.except(:adapter, :user, :password, :host, :port, :path,
+                             :fragment, :scheme, :query, :username, :database)
+        query = nil if query.empty?
+
+        # Better error message in case port is no Numeric value
+        port = store[:port].nil? ? nil : store[:port].to_int
+
+        uri = DataObjects::URI.new(
+                    store[:adapter],
+                    store[:user] || store[:username],
+                    store[:password],
+                    store[:host],
+                    port,
+                    store[:path] || store[:database],
+                    query,
+                    store[:fragment]
+                ).freeze
+        return uri
+    else
+        return nil
+    end
+end
+
 def available_data_stores
 	stores = Array.new
 	stores << @data_stores.keys

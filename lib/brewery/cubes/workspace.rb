@@ -30,7 +30,6 @@ end
 # using default DataStoreManager
 # @see DataStoreManager#create_connection
 def initialize(conn_object)
-puts "==> CREATING WORKSPACE #{self}"
     if conn_object.class == String || conn_object.class == Symbol
         store = DataStoreManager.default_manager.data_store(conn_object)
         if store.class == Hash

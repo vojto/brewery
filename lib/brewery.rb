@@ -39,9 +39,7 @@ require 'brewery/core/data_table'
 require 'brewery/core/dataset_description'
 require 'brewery/core/field_description'
 
-require 'brewery/core/downloader'
-require 'brewery/core/download_batch'
-require 'brewery/core/download_manager'
+require 'brewery/core/database'
 
 # ETL
 
