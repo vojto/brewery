@@ -98,6 +98,13 @@ def remove_cuts_by_dimension(dimension)
 	@summaries.clear
 end
 
+# Find all cuts with dimension
+def cuts_for_dimension(dimension)
+  @cuts.select { |cut|
+		@cube.dimension_object(cut.dimension) == @cube.dimension_object(dimension)
+	}
+end
+
 # @deprecated
 def dataset
     @cube.dataset
